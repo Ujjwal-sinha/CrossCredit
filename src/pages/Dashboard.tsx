@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import StatCard from '../components/UI/StatCard';
 import CyberButton from '../components/UI/CyberButton';
 import CyberCard from '../components/UI/CyberCard';
+import ConnectWallet from '../components/Web3/ConnectWallet';
 
 
 const Dashboard: React.FC = () => {
@@ -42,7 +43,8 @@ const Dashboard: React.FC = () => {
             </h1>
             <p className="text-cyber-400 font-mono">Manage your cross-chain DeFi portfolio</p>
           </div>
-          <div className="flex space-x-4 mt-4 lg:mt-0">
+          <div className="flex space-x-4 mt-4 lg:mt-0 items-center">
+            <ConnectWallet />
             <Link to="/deposit">
               <CyberButton icon={Plus} glitch>Deposit</CyberButton>
             </Link>
