@@ -6,6 +6,7 @@ import StatCard from '../components/UI/StatCard';
 import CyberButton from '../components/UI/CyberButton';
 import CyberCard from '../components/UI/CyberCard';
 
+
 const Dashboard: React.FC = () => {
   const containerVariants = {
     hidden: { opacity: 0 },
