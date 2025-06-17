@@ -95,21 +95,27 @@ export const useWallet = () => {
 
       const address = accounts[0];
       
-      // Immediate update for fast UI response
+      // Get balance immediately after connection
+      let balance = null;
+      try {
+        balance = await window.ethereum.request({
+          method: 'eth_getBalance',
+          params: [address, 'latest'],
+        });
+        balance = balance ? `${parseFloat((parseInt(balance, 16) / 1e18).toFixed(4))} ETH` : null;
+      } catch (err) {
+        console.error('Error fetching initial balance:', err);
+      }
+
+      // Update state with all info including balance
       updateState({
         isConnected: true,
         address,
         chainId: window.ethereum.chainId || null,
+        balance,
         error: null,
         isConnecting: false
       });
-
-      // Background balance fetch
-      fetchBalance(address)
-        .then(balance => {
-          if (balance) updateState({ balance });
-        })
-        .catch(() => {}); // Ignore balance fetch errors
 
     } catch (error: any) {
       console.error('Wallet connection error:', error);
@@ -134,18 +140,24 @@ export const useWallet = () => {
       // Fast check using selectedAddress
       if (window.ethereum.selectedAddress) {
         const address = window.ethereum.selectedAddress;
+        let balance = null;
+        
+        try {
+          const balanceHex = await window.ethereum.request({
+            method: 'eth_getBalance',
+            params: [address, 'latest'],
+          });
+          balance = balanceHex ? `${parseFloat((parseInt(balanceHex, 16) / 1e18).toFixed(4))} ETH` : null;
+        } catch (err) {
+          console.error('Error fetching initial balance:', err);
+        }
+
         updateState({
           isConnected: true,
           address,
-          chainId: window.ethereum.chainId || null
+          chainId: window.ethereum.chainId || null,
+          balance
         });
-
-        // Background balance fetch
-        fetchBalance(address)
-          .then(balance => {
-            if (balance) updateState({ balance });
-          })
-          .catch(() => {}); // Ignore balance fetch errors
         return;
       }
 
@@ -153,18 +165,24 @@ export const useWallet = () => {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts?.length > 0) {
           const address = accounts[0];
+          let balance = null;
+          
+          try {
+            const balanceHex = await window.ethereum.request({
+              method: 'eth_getBalance',
+              params: [address, 'latest'],
+            });
+            balance = balanceHex ? `${parseFloat((parseInt(balanceHex, 16) / 1e18).toFixed(4))} ETH` : null;
+          } catch (err) {
+            console.error('Error fetching initial balance:', err);
+          }
+
           updateState({
             isConnected: true,
             address,
-            chainId: window.ethereum.chainId || null
+            chainId: window.ethereum.chainId || null,
+            balance
           });
-
-          // Background balance fetch
-          fetchBalance(address)
-            .then(balance => {
-              if (balance) updateState({ balance });
-            })
-            .catch(() => {}); // Ignore balance fetch errors
         }
       } catch {
         // Ignore errors during initial check
