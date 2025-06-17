@@ -242,24 +242,93 @@ const LandingPage: React.FC = () => {
         </motion.div>
       </section>
 
-      {/* Network Visualization */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      {/* Network Visualization Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         <motion.div
-          className="max-w-7xl mx-auto text-center"
+          className="max-w-7xl mx-auto"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ duration: 0.7 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 font-orbitron neon-text">
-            Cross-Chain Network
-          </h2>
-          <p className="text-xl text-cyber-300 mb-12 font-mono">
-            Visualize the interconnected blockchain ecosystem
-          </p>
-          <CyberCard className="max-w-4xl mx-auto">
-            <NetworkVisualization />
-          </CyberCard>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 font-orbitron neon-text">
+              Cross-Chain Network
+            </h2>
+            <p className="text-xl text-cyber-300 max-w-3xl mx-auto mb-8 font-mono">
+              Seamlessly connect and operate across multiple blockchains
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-center mb-12">
+            {supportedChains.map((chain) => (
+              <motion.div
+                key={chain.name}
+                className="flex items-center justify-center"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+              >
+                <div 
+                  className="p-4 rounded-lg cyber-glass border border-cyber-500/30 w-full text-center"
+                  style={{ 
+                    boxShadow: `0 0 20px ${chain.color}33`,
+                    borderColor: `${chain.color}66`
+                  }}
+                >
+                  <div className="text-2xl mb-2">{chain.logo}</div>
+                  <div className="text-white font-orbitron">{chain.name}</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="relative">
+            <CyberCard className="max-w-4xl mx-auto">
+              <div className="aspect-[16/9] w-full">
+                <NetworkVisualization />
+              </div>
+              
+              {/* Network Stats Overlay */}
+              <div className="absolute top-4 left-4 cyber-glass p-4 rounded-lg border border-cyber-500/30 backdrop-blur-sm">
+                <div className="text-xs text-cyber-400 uppercase mb-1 font-mono">Network Activity</div>
+                <div className="flex space-x-6">
+                  <div>
+                    <div className="text-matrix-400 text-lg font-bold">5.2K</div>
+                    <div className="text-xs text-cyber-300">Daily Txns</div>
+                  </div>
+                  <div>
+                    <div className="text-neon-400 text-lg font-bold">$2.8M</div>
+                    <div className="text-xs text-cyber-300">24h Volume</div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Legend */}
+              <div className="absolute bottom-4 right-4 cyber-glass p-4 rounded-lg border border-cyber-500/30 backdrop-blur-sm">
+                <div className="flex items-center space-x-4">
+                  {[
+                    { color: '#627eea', label: 'ETH Network' },
+                    { color: '#8247e5', label: 'MATIC Network' },
+                    { color: '#e84142', label: 'AVAX Network' },
+                  ].map(item => (
+                    <div key={item.label} className="flex items-center space-x-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-xs text-cyber-300">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CyberCard>
+
+            {/* Pulse Effects */}
+            <div className="absolute -inset-4 bg-gradient-radial from-matrix-500/20 to-transparent animate-pulse-slow pointer-events-none" />
+          </div>
+
         </motion.div>
       </section>
 
