@@ -56,7 +56,7 @@ contract DSC is ERC20, ERC20Burnable, Ownable {
         string memory _name,
         string memory _symbol,
         address _initialMinter
-    ) ERC20(_name, _symbol) Ownable(msg.sender) {
+    ) ERC20(_name, _symbol) Ownable() {
         if (_initialMinter != address(0)) {
             _addMinter(_initialMinter);
         }
