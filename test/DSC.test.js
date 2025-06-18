@@ -1,267 +1,353 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+// SPDX-License-Identifier: MIT
+import { expect } from "chai";
+import pkg from "hardhat";
+const { ethers } = pkg;
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
-// Minimal, ethers-compatible ABIs for mocks (no tuples in string signatures)
-const MockRouterClientABI = [
-  "function getFee(uint64) external view returns (uint256)",
-  "function ccipSend(uint64, bytes) external payable returns (bytes32)"
-];
-const MockERC20ABI = [
-  "function balanceOf(address account) external view returns (uint256)",
-  "function transferFrom(address from, address to, uint256 amount) external returns (bool)",
-  "function transfer(address to, uint256 amount) external returns (bool)",
-  "function approve(address spender, uint256 amount) external returns (bool)",
-];
+describe("DSC", function () {
+  // Fixture to deploy the contract and set up initial state
+  async function deployDSCFixture() {
+    const signers = await ethers.getSigners();
+    if (signers.length < 4) {
+      throw new Error("Insufficient signers available");
+    }
+    const [owner, minter, user, unauthorized] = signers;
 
-describe("Depositor", function () {
-  let Depositor, depositor;
-  let MockRouterClient, mockRouter;
-  let MockERC20, mockToken;
-  let owner, user1, user2, mainRouter, unauthorized;
-  const MAIN_ROUTER_CHAIN_SELECTOR = 1234567890n;
-  const TOKEN_AMOUNT = ethers.parseUnits("100", 18);
-  const INITIAL_BALANCE = ethers.parseUnits("1000", 18);
-
-  beforeEach(async function () {
-    [owner, user1, user2, mainRouter, unauthorized] = await ethers.getSigners();
-
-    // Deploy mock RouterClient
-    MockRouterClient = await ethers.getContractFactory(MockRouterClientABI, {
-      bytecode: "0x608060405234801561001057600080fd5b506101be806100206000396000f3fe60806040526000366000803760008036600060405160200161009c5760405162461bcd60e51b815260206004820152602660248201527f546869732069732061206d6f636b20636f6e747261637420666f722074657374696e60448201526567206f6e6c7960c01b6064820152608401600080fd5b60008036818060006040516020016100c45760405162461bcd60e51b8152600401600080fd5b60408051602081018390527f00000000000000000000000000000000000000000000000000000000000000c8815260006020820152600160408201526000908101905060006001600160a01b0316630f2d83a960e01b8252600482015260248101829052604481018290526000606482018190526000608482015260a482019390935260c401602060405180830381855afa15801561015d573d6000803e3d6000fd5b5050506040513d601f19601f8201168201806040525081019061017f9190610186565b91509150935093509350935093565b60006020828403121561019857600080fd5b81516001600160a01b03811681146101af57600080fd5b9392505050565b60e4806101bc6000396000f3fe",
+    // Validate signers
+    [owner, minter, user, unauthorized].forEach((signer, index) => {
+      if (!signer || !signer.address) {
+        throw new Error(`Signer at index ${index} is null or invalid`);
+      }
     });
-    mockRouter = await MockRouterClient.deploy();
-    await mockRouter.waitForDeployment();
 
-    // Deploy mock ERC20 token
-    MockERC20 = await ethers.getContractFactory(MockERC20ABI, {
-      bytecode: "0x608060405234801561001057600080fd5b5061030f806100206000396000f3fe608060405234801561001057600080fd5b506004361061004c5760003560e01c8063095ea7b31461005157806370a0823114610076578063a9059cbb1461009b578063dd62ed3e146100c0575b600080fd5b61006461005f3660046101e7565b6100e8565b60405190151581526020015b60405180910390f35b61008e610084366004610211565b60016020526000908152604090205481565b60405190815260200161006d575b6100646100a93660046101e7565b61011e565b61008e6100ce366004610233565b60026020526000908152604090205481565b6001600160a01b0383166000908152600260205260408120541115610115576001600160a01b0383166000908152600160205260409020548082111561011557600080fd5b5061011b8284610272565b5060015b92915050565b6001600160a01b0383166000908152600160205260408120548082111561013e57600080fd5b6001600160a01b03831660009081526001602052604090205461015e90836102a4565b6001600160a01b038416600090815260016020908152604090912082905561018290836102bc565b5060015b92915050565b80356001600160a01b038116811461019f57600080fd5b919050565b6000602082840312156101b657600080fd5b50813567ffffffffffffffff8111156101ce57600080fd5b6020830191508360208285010111156101e657600080fd5b505050505050565b600080604083850312156101fa57600080fd5b61020383610188565b91506101e68260208401610188565b60006020828403121561022357600080fd5b61022c82610188565b9392505050565b6000806040838503121561024657600080fd5b61024f83610188565b915061025d60208401610188565b90509250929050565b60006020828403121561048057600080fd5b813567ffffffffffffffff81111561049757600080fd5b6104a384828501610375565b94935050505056",
-    });
-    mockToken = await MockERC20.deploy();
-    await mockToken.waitForDeployment();
+    // Deploy the DSC contract
+    const DSC = await ethers.getContractFactory("DSC");
+    const dsc = await DSC.deploy("DeFi Stablecoin", "DSC", minter.address);
+    await dsc.waitForDeployment();
+    if (!dsc.target) {
+      throw new Error("DSC deployment failed: contract address is null");
+    }
 
-    // Deploy Depositor contract
-    Depositor = await ethers.getContractFactory("Depositor");
-    depositor = await Depositor.deploy(
-      mockRouter.target,
-      MAIN_ROUTER_CHAIN_SELECTOR,
-      mainRouter.address
-    );
-    await depositor.waitForDeployment();
-
-    // Add supported token
-    await depositor.connect(owner).addSupportedToken(mockToken.target);
-  });
+    return {
+      dsc,
+      owner,
+      minter,
+      user,
+      unauthorized,
+    };
+  }
 
   describe("Deployment", function () {
-    it("should deploy successfully with correct parameters", async function () {
-      expect(depositor.target).to.be.properAddress;
-      expect(await depositor.s_router()).to.equal(mockRouter.target);
-      expect(await depositor.MAIN_ROUTER_CHAIN_SELECTOR()).to.equal(MAIN_ROUTER_CHAIN_SELECTOR);
-      expect(await depositor.MAIN_ROUTER_ADDRESS()).to.equal(mainRouter.address);
-      expect(await depositor.allowlistedDestinationChains(MAIN_ROUTER_CHAIN_SELECTOR)).to.be.true;
-      expect(await depositor.allowlistedSenders(mainRouter.address)).to.be.true;
-      expect(await depositor.isTokenSupported(mockToken.target)).to.be.true;
+    it("should set the correct name, symbol, and decimals", async function () {
+      const { dsc } = await loadFixture(deployDSCFixture);
+      expect(await dsc.name()).to.equal("DeFi Stablecoin");
+      expect(await dsc.symbol()).to.equal("DSC");
+      expect(await dsc.decimals()).to.equal(18);
     });
 
-    it("should revert if router is zero address", async function () {
-      await expect(
-        Depositor.deploy(ethers.ZeroAddress, MAIN_ROUTER_CHAIN_SELECTOR, mainRouter.address)
-      ).to.be.revertedWithCustomError(Depositor, "ZeroAddress");
+    it("should set the owner as the deployer", async function () {
+      const { dsc, owner } = await loadFixture(deployDSCFixture);
+      expect(await dsc.owner()).to.equal(owner.address);
     });
 
-    it("should revert if mainRouterAddress is zero address", async function () {
-      await expect(
-        Depositor.deploy(mockRouter.target, MAIN_ROUTER_CHAIN_SELECTOR, ethers.ZeroAddress)
-      ).to.be.revertedWithCustomError(Depositor, "ZeroAddress");
-    });
-  });
-
-  describe("Administration", function () {
-    it("should allowlist a destination chain", async function () {
-      const newChainSelector = 9876543210n;
-      await depositor.connect(owner).allowlistDestinationChain(newChainSelector, true);
-      expect(await depositor.allowlistedDestinationChains(newChainSelector)).to.be.true;
+    it("should set the initial minter", async function () {
+      const { dsc, minter } = await loadFixture(deployDSCFixture);
+      expect(await dsc.isMinter(minter.address)).to.be.true;
+      const minters = await dsc.getMinters();
+      expect(minters).to.include(minter.address);
+      expect(await dsc.getMintersCount()).to.equal(1);
     });
 
-    it("should allowlist a source chain", async function () {
-      const newSourceChain = 54321n;
-      await depositor.connect(owner).allowlistSourceChain(newSourceChain, true);
-      expect(await depositor.allowlistedSourceChains(newSourceChain)).to.be.true;
+    it("should deploy with zero total supply", async function () {
+      const { dsc } = await loadFixture(deployDSCFixture);
+      expect(await dsc.totalSupply()).to.equal(0);
+      expect(await dsc.remainingMintableSupply()).to.equal(ethers.parseEther("1000000000")); // 1 billion
     });
 
-    it("should allowlist a sender", async function () {
-      await depositor.connect(owner).allowlistSender(user1.address, true);
-      expect(await depositor.allowlistedSenders(user1.address)).to.be.true;
-    });
-
-    it("should add a supported token", async function () {
-      const newToken = (await MockERC20.deploy()).target;
-      await depositor.connect(owner).addSupportedToken(newToken);
-      expect(await depositor.isTokenSupported(newToken)).to.be.true;
-      const supportedTokens = await depositor.getSupportedTokens();
-      expect(supportedTokens).to.include(newToken);
-    });
-
-    it("should remove a supported token", async function () {
-      await depositor.connect(owner).removeSupportedToken(mockToken.target);
-      expect(await depositor.isTokenSupported(mockToken.target)).to.be.false;
-      const supportedTokens = await depositor.getSupportedTokens();
-      expect(supportedTokens).to.not.include(mockToken.target);
-    });
-
-    it("should revert if non-owner tries to add supported token", async function () {
-      await expect(
-        depositor.connect(user1).addSupportedToken(mockToken.target)
-      ).to.be.revertedWithCustomError(depositor, "OwnableUnauthorizedAccount");
-    });
-
-    it("should revert if adding zero address as supported token", async function () {
-      await expect(
-        depositor.connect(owner).addSupportedToken(ethers.ZeroAddress)
-      ).to.be.revertedWithCustomError(depositor, "ZeroAddress");
+    it("should deploy with zero address as initial minter if provided", async function () {
+      const DSC = await ethers.getContractFactory("DSC");
+      const dsc = await DSC.deploy("DeFi Stablecoin", "DSC", ethers.ZeroAddress);
+      await dsc.waitForDeployment();
+      expect(await dsc.getMintersCount()).to.equal(0);
+      const minters = await dsc.getMinters();
+      expect(minters).to.be.empty;
     });
   });
 
-  describe("Token Deposits", function () {
-    beforeEach(async function () {
-      await mockToken.connect(user1).approve(depositor.target, TOKEN_AMOUNT);
+  describe("Minter Management", function () {
+    it("should allow owner to add a new minter", async function () {
+      const { dsc, owner, user } = await loadFixture(deployDSCFixture);
+      await expect(dsc.connect(owner).addMinter(user.address))
+        .to.emit(dsc, "MinterAdded")
+        .withArgs(user.address);
+      expect(await dsc.isMinter(user.address)).to.be.true;
+      const minters = await dsc.getMinters();
+      expect(minters).to.include(user.address);
+      expect(await dsc.getMintersCount()).to.equal(2);
     });
 
-    it("should deposit tokens successfully", async function () {
-      const initialBalance = await mockToken.balanceOf(user1.address);
-      const tx = await depositor.connect(user1).depositToken(mockToken.target, TOKEN_AMOUNT);
-
-      expect(await depositor.getUserDeposit(user1.address, mockToken.target)).to.equal(TOKEN_AMOUNT);
-      expect(await mockToken.balanceOf(depositor.target)).to.equal(TOKEN_AMOUNT);
-      expect(await mockToken.balanceOf(user1.address)).to.equal(initialBalance - TOKEN_AMOUNT);
-
-      await expect(tx)
-        .to.emit(depositor, "TokenDeposited")
-        .withArgs(user1.address, mockToken.target, TOKEN_AMOUNT, ethers.HashZero);
+    it("should allow owner to remove a minter", async function () {
+      const { dsc, owner, minter } = await loadFixture(deployDSCFixture);
+      await expect(dsc.connect(owner).removeMinter(minter.address))
+        .to.emit(dsc, "MinterRemoved")
+        .withArgs(minter.address);
+      expect(await dsc.isMinter(minter.address)).to.be.false;
+      const minters = await dsc.getMinters();
+      expect(minters).to.not.include(minter.address);
+      expect(await dsc.getMintersCount()).to.equal(0);
     });
 
-    it("should revert if token is not supported", async function () {
-      const unsupportedToken = (await MockERC20.deploy()).target;
+    it("should revert if non-owner tries to add a minter", async function () {
+      const { dsc, unauthorized, user } = await loadFixture(deployDSCFixture);
       await expect(
-        depositor.connect(user1).depositToken(unsupportedToken, TOKEN_AMOUNT)
-      ).to.be.revertedWithCustomError(depositor, "TokenNotSupported");
+        dsc.connect(unauthorized).addMinter(user.address)
+      ).to.be.reverted;
     });
 
-    it("should revert if amount is zero", async function () {
+    it("should revert if non-owner tries to remove a minter", async function () {
+      const { dsc, unauthorized, minter } = await loadFixture(deployDSCFixture);
       await expect(
-        depositor.connect(user1).depositToken(mockToken.target, 0)
-      ).to.be.revertedWithCustomError(depositor, "ZeroAmount");
+        dsc.connect(unauthorized).removeMinter(minter.address)
+      ).to.be.reverted;
     });
 
-    it("should revert if insufficient token balance", async function () {
-      const largeAmount = INITIAL_BALANCE + 1n;
+    it("should revert if adding zero address as minter", async function () {
+      const { dsc, owner } = await loadFixture(deployDSCFixture);
       await expect(
-        depositor.connect(user1).depositToken(mockToken.target, largeAmount)
-      ).to.be.revertedWithCustomError(depositor, "InsufficientTokenBalance");
+        dsc.connect(owner).addMinter(ethers.ZeroAddress)
+      ).to.be.revertedWithCustomError(dsc, "DSC__NotZeroAddress");
+    });
+
+    it("should revert if removing zero address as minter", async function () {
+      const { dsc, owner } = await loadFixture(deployDSCFixture);
+      await expect(
+        dsc.connect(owner).removeMinter(ethers.ZeroAddress)
+      ).to.be.revertedWithCustomError(dsc, "DSC__NotZeroAddress");
+    });
+
+    it("should revert if adding an existing minter", async function () {
+      const { dsc, owner, minter } = await loadFixture(deployDSCFixture);
+      await expect(
+        dsc.connect(owner).addMinter(minter.address)
+      ).to.be.revertedWith("DSC: Address is already a minter");
+    });
+
+    it("should revert if removing a non-minter", async function () {
+      const { dsc, owner, user } = await loadFixture(deployDSCFixture);
+      await expect(
+        dsc.connect(owner).removeMinter(user.address)
+      ).to.be.revertedWith("DSC: Address is not a minter");
     });
   });
 
-  describe("Token Withdrawals", function () {
-    beforeEach(async function () {
-      await mockToken.connect(user1).approve(depositor.target, TOKEN_AMOUNT);
-      await depositor.connect(user1).depositToken(mockToken.target, TOKEN_AMOUNT);
+  describe("Minting", function () {
+    it("should allow minter to mint tokens", async function () {
+      const { dsc, minter, user } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
+      await expect(dsc.connect(minter).mint(user.address, amount))
+        .to.emit(dsc, "TokensMinted")
+        .withArgs(user.address, amount, minter.address);
+      expect(await dsc.balanceOf(user.address)).to.equal(amount);
+      expect(await dsc.totalSupply()).to.equal(amount);
+      expect(await dsc.remainingMintableSupply()).to.equal(
+        ethers.parseEther("1000000000") - amount
+      );
     });
 
-    it("should withdraw tokens successfully", async function () {
-      const initialBalance = await mockToken.balanceOf(user1.address);
-      const tx = await depositor.connect(user1).withdrawToken(mockToken.target, TOKEN_AMOUNT);
-
-      expect(await depositor.getUserDeposit(user1.address, mockToken.target)).to.equal(0);
-      expect(await mockToken.balanceOf(depositor.target)).to.equal(0);
-      expect(await mockToken.balanceOf(user1.address)).to.equal(initialBalance + TOKEN_AMOUNT);
-
-      await expect(tx)
-        .to.emit(depositor, "TokenWithdrawn")
-        .withArgs(user1.address, mockToken.target, TOKEN_AMOUNT);
-    });
-
-    it("should revert if insufficient deposited amount", async function () {
-      const largeAmount = TOKEN_AMOUNT + 1n;
+    it("should revert if non-minter tries to mint", async function () {
+      const { dsc, unauthorized, user } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
       await expect(
-        depositor.connect(user1).withdrawToken(mockToken.target, largeAmount)
-      ).to.be.revertedWithCustomError(depositor, "InsufficientTokenBalance");
+        dsc.connect(unauthorized).mint(user.address, amount)
+      ).to.be.revertedWithCustomError(dsc, "DSC__NotMinter");
     });
 
-    it("should revert if token is not supported", async function () {
-      const unsupportedToken = (await MockERC20.deploy()).target;
+    it("should revert if minting to zero address", async function () {
+      const { dsc, minter } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
       await expect(
-        depositor.connect(user1).withdrawToken(unsupportedToken, TOKEN_AMOUNT)
-      ).to.be.revertedWithCustomError(depositor, "TokenNotSupported");
+        dsc.connect(minter).mint(ethers.ZeroAddress, amount)
+      ).to.be.revertedWithCustomError(dsc, "DSC__NotZeroAddress");
     });
 
-    it("should revert if amount is zero", async function () {
+    it("should revert if minting zero amount", async function () {
+      const { dsc, minter, user } = await loadFixture(deployDSCFixture);
       await expect(
-        depositor.connect(user1).withdrawToken(mockToken.target, 0)
-      ).to.be.revertedWithCustomError(depositor, "ZeroAmount");
+        dsc.connect(minter).mint(user.address, 0)
+      ).to.be.revertedWithCustomError(dsc, "DSC__MustBeMoreThanZero");
+    });
+
+    it("should revert if minting exceeds max supply", async function () {
+      const { dsc, minter, user } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000000001"); // 1 billion + 1
+      await expect(
+        dsc.connect(minter).mint(user.address, amount)
+      ).to.be.revertedWith("DSC: Exceeds max supply");
+    });
+
+    it("should correctly check if minting would exceed max supply", async function () {
+      const { dsc, minter, user } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
+      await dsc.connect(minter).mint(user.address, amount);
+      expect(await dsc.wouldExceedMaxSupply(ethers.parseEther("999999000"))).to.be.false;
+      expect(await dsc.wouldExceedMaxSupply(ethers.parseEther("1000000000"))).to.be.true;
     });
   });
 
-  describe("Emergency Withdrawals", function () {
-    it("should withdraw ETH successfully", async function () {
-      const ethAmount = ethers.parseEther("1");
-      await owner.sendTransaction({ to: depositor.target, value: ethAmount });
-      const initialBalance = await ethers.provider.getBalance(owner.address);
-
-      const tx = await depositor.connect(owner).withdraw(owner.address);
-
-      const finalBalance = await ethers.provider.getBalance(owner.address);
-      expect(finalBalance).to.be.closeTo(initialBalance + ethAmount, ethers.parseEther("0.01"));
+  describe("Burning", function () {
+    it("should allow minter to burn tokens from another address", async function () {
+      const { dsc, minter, user } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
+      await dsc.connect(minter).mint(user.address, amount);
+      await dsc.connect(user).approve(minter.address, amount);
+      await expect(dsc.connect(minter).burnFrom(user.address, amount))
+        .to.emit(dsc, "TokensBurned")
+        .withArgs(user.address, amount, minter.address);
+      expect(await dsc.balanceOf(user.address)).to.equal(0);
+      expect(await dsc.totalSupply()).to.equal(0);
+      expect(await dsc.remainingMintableSupply()).to.equal(ethers.parseEther("1000000000"));
     });
 
-    it("should withdraw tokens successfully as owner", async function () {
-      await mockToken.connect(user1).approve(depositor.target, TOKEN_AMOUNT);
-      await depositor.connect(user1).depositToken(mockToken.target, TOKEN_AMOUNT);
-
-      const initialBalance = await mockToken.balanceOf(owner.address);
-      const tx = await depositor.connect(owner).withdrawToken(owner.address, mockToken.target);
-
-      expect(await mockToken.balanceOf(owner.address)).to.equal(initialBalance + TOKEN_AMOUNT);
-      expect(await mockToken.balanceOf(depositor.target)).to.equal(0);
+    it("should allow user to burn their own tokens", async function () {
+      const { dsc, minter, user } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
+      await dsc.connect(minter).mint(user.address, amount);
+      await expect(dsc.connect(user).burn(amount))
+        .to.emit(dsc, "TokensBurned")
+        .withArgs(user.address, amount, user.address);
+      expect(await dsc.balanceOf(user.address)).to.equal(0);
+      expect(await dsc.totalSupply()).to.equal(0);
     });
 
-    it("should revert if non-owner tries to withdraw ETH", async function () {
+    it("should revert if non-minter tries to burn from another address", async function () {
+      const { dsc, minter, user, unauthorized } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
+      await dsc.connect(minter).mint(user.address, amount);
+      await dsc.connect(user).approve(unauthorized.address, amount);
       await expect(
-        depositor.connect(user1).withdraw(user1.address)
-      ).to.be.revertedWithCustomError(depositor, "OwnableUnauthorizedAccount");
+        dsc.connect(unauthorized).burnFrom(user.address, amount)
+      ).to.be.revertedWithCustomError(dsc, "DSC__NotMinter");
     });
 
-    it("should revert if nothing to withdraw (ETH)", async function () {
+    it("should revert if burning from zero address", async function () {
+      const { dsc, minter } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
       await expect(
-        depositor.connect(owner).withdraw(owner.address)
-      ).to.be.revertedWithCustomError(depositor, "NothingToWithdraw");
+        dsc.connect(minter).burnFrom(ethers.ZeroAddress, amount)
+      ).to.be.revertedWithCustomError(dsc, "DSC__NotZeroAddress");
     });
 
-    it("should revert if nothing to withdraw (token)", async function () {
+    it("should revert if burning zero amount", async function () {
+      const { dsc, minter, user } = await loadFixture(deployDSCFixture);
+      await dsc.connect(minter).mint(user.address, ethers.parseEther("1000"));
+      await dsc.connect(user).approve(minter.address, ethers.parseEther("1000"));
       await expect(
-        depositor.connect(owner).withdrawToken(owner.address, mockToken.target)
-      ).to.be.revertedWithCustomError(depositor, "NothingToWithdraw");
+        dsc.connect(minter).burnFrom(user.address, 0)
+      ).to.be.revertedWithCustomError(dsc, "DSC__MustBeMoreThanZero");
+      await expect(
+        dsc.connect(user).burn(0)
+      ).to.be.revertedWithCustomError(dsc, "DSC__MustBeMoreThanZero");
+    });
+
+    it("should revert if burning more than balance", async function () {
+      const { dsc, minter, user } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
+      await dsc.connect(minter).mint(user.address, amount);
+      await dsc.connect(user).approve(minter.address, amount * 2n);
+      await expect(
+        dsc.connect(minter).burnFrom(user.address, amount * 2n)
+      ).to.be.revertedWithCustomError(dsc, "DSC__BurnAmountExceedsBalance");
+      await expect(
+        dsc.connect(user).burn(amount * 2n)
+      ).to.be.revertedWithCustomError(dsc, "DSC__BurnAmountExceedsBalance");
+    });
+
+    it("should revert if burning without allowance", async function () {
+      const { dsc, minter, user } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
+      await dsc.connect(minter).mint(user.address, amount);
+      await expect(
+        dsc.connect(minter).burnFrom(user.address, amount)
+      ).to.be.reverted;
+    });
+  });
+
+  describe("Transfers", function () {
+    it("should allow transfer of tokens", async function () {
+      const { dsc, minter, user, unauthorized } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
+      await dsc.connect(minter).mint(user.address, amount);
+      await expect(dsc.connect(user).transfer(unauthorized.address, amount))
+        .to.emit(dsc, "Transfer")
+        .withArgs(user.address, unauthorized.address, amount);
+      expect(await dsc.balanceOf(user.address)).to.equal(0);
+      expect(await dsc.balanceOf(unauthorized.address)).to.equal(amount);
+    });
+
+    it("should allow transferFrom of tokens", async function () {
+      const { dsc, minter, user, unauthorized } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
+      await dsc.connect(minter).mint(user.address, amount);
+      await dsc.connect(user).approve(unauthorized.address, amount);
+      await expect(
+        dsc.connect(unauthorized).transferFrom(user.address, unauthorized.address, amount)
+      )
+        .to.emit(dsc, "Transfer")
+        .withArgs(user.address, unauthorized.address, amount);
+      expect(await dsc.balanceOf(user.address)).to.equal(0);
+      expect(await dsc.balanceOf(unauthorized.address)).to.equal(amount);
+    });
+
+    it("should revert if transferring to zero address", async function () {
+      const { dsc, minter, user } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
+      await dsc.connect(minter).mint(user.address, amount);
+      await expect(
+        dsc.connect(user).transfer(ethers.ZeroAddress, amount)
+      ).to.be.revertedWithCustomError(dsc, "DSC__NotZeroAddress");
+      await dsc.connect(user).approve(minter.address, amount);
+      await expect(
+        dsc.connect(minter).transferFrom(user.address, ethers.ZeroAddress, amount)
+      ).to.be.revertedWithCustomError(dsc, "DSC__NotZeroAddress");
+    });
+
+    it("should revert if transferring more than balance", async function () {
+      const { dsc, minter, user, unauthorized } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000");
+      await dsc.connect(minter).mint(user.address, amount);
+      await expect(
+        dsc.connect(user).transfer(unauthorized.address, amount * 2n)
+      ).to.be.reverted;
+      await dsc.connect(user).approve(minter.address, amount * 2n);
+      await expect(
+        dsc.connect(minter).transferFrom(user.address, unauthorized.address, amount * 2n)
+      ).to.be.reverted;
     });
   });
 
   describe("View Functions", function () {
-    beforeEach(async function () {
-      await mockToken.connect(user1).approve(depositor.target, TOKEN_AMOUNT);
-      await depositor.connect(user1).depositToken(mockToken.target, TOKEN_AMOUNT);
+    it("should return correct minters list", async function () {
+      const { dsc, owner, minter, user } = await loadFixture(deployDSCFixture);
+      await dsc.connect(owner).addMinter(user.address);
+      const minters = await dsc.getMinters();
+      expect(minters).to.include(minter.address);
+      expect(minters).to.include(user.address);
+      expect(await dsc.getMintersCount()).to.equal(2);
     });
 
-    it("should return user deposit amount", async function () {
-      expect(await depositor.getUserDeposit(user1.address, mockToken.target)).to.equal(TOKEN_AMOUNT);
+    it("should return correct minter status", async function () {
+      const { dsc, minter, user } = await loadFixture(deployDSCFixture);
+      expect(await dsc.isMinter(minter.address)).to.be.true;
+      expect(await dsc.isMinter(user.address)).to.be.false;
     });
 
-    it("should return supported tokens", async function () {
-      const supportedTokens = await depositor.getSupportedTokens();
-      expect(supportedTokens).to.include(mockToken.target);
-    });
-
-    it("should return token support status", async function () {
-      expect(await depositor.isTokenSupported(mockToken.target)).to.be.true;
-      const unsupportedToken = (await MockERC20.deploy()).target;
-      expect(await depositor.isTokenSupported(unsupportedToken)).to.be.false;
+    it("should return correct remaining mintable supply", async function () {
+      const { dsc, minter, user } = await loadFixture(deployDSCFixture);
+      const amount = ethers.parseEther("1000000");
+      await dsc.connect(minter).mint(user.address, amount);
+      expect(await dsc.remainingMintableSupply()).to.equal(
+        ethers.parseEther("1000000000") - amount
+      );
     });
   });
 });
