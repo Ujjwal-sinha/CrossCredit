@@ -1215,8 +1215,8 @@
       ]
     },
     "/Users/ujjwalsinha/project/contracts/mocks/MockRouter.sol": {
-      "lastModificationDate": 1750272078308,
-      "contentHash": "07c5d70daea8241359ba52c5518d8ae5",
+      "lastModificationDate": 1750273105126,
+      "contentHash": "94271e57f3bbc50d42563d345d32550e",
       "sourceName": "contracts/mocks/MockRouter.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -1252,7 +1252,6 @@
         "^0.8.19"
       ],
       "artifacts": [
-        "MockERC20",
         "MockFunctionsRouter",
         "MockMainRouter",
         "MockRouter"
