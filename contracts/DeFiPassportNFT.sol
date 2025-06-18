@@ -96,7 +96,7 @@ contract DeFiPassportNFT is ERC721, ERC721URIStorage, Ownable {
         string memory name,
         string memory symbol,
         address _mainRouter
-    ) ERC721(name, symbol) Ownable(msg.sender) {
+    ) ERC721(name, symbol) Ownable() {
         if (_mainRouter != address(0)) {
             authorizedUpdaters[_mainRouter] = true;
             emit UpdaterAuthorized(_mainRouter);

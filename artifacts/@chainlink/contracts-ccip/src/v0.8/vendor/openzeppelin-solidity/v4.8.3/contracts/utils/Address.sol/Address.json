@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "Address",
+  "sourceName": "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/utils/Address.sol",
+  "abi": [],
+  "bytecode": "0x60808060405234601757603a9081601d823930815050f35b600080fdfe600080fdfea264697066735822122035db4a1521851c70cb6b88cea8f2ca814c57b97d02e9f3ecafdaa7dc1617b56964736f6c634300081c0033",
+  "deployedBytecode": "0x600080fdfea264697066735822122035db4a1521851c70cb6b88cea8f2ca814c57b97d02e9f3ecafdaa7dc1617b56964736f6c634300081c0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

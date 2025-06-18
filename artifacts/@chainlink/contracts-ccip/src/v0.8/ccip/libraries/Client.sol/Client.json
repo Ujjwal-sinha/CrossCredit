@@ -1,0 +1,37 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "Client",
+  "sourceName": "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "EVM_EXTRA_ARGS_V1_TAG",
+      "outputs": [
+        {
+          "internalType": "bytes4",
+          "name": "",
+          "type": "bytes4"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "EVM_EXTRA_ARGS_V2_TAG",
+      "outputs": [
+        {
+          "internalType": "bytes4",
+          "name": "",
+          "type": "bytes4"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080806040523460175760a49081601d823930815050f35b600080fdfe6080806040526004361015601257600080fd5b60003560e01c9081633ab8c0d01460545750638113c57814603257600080fd5b6000366003190112604f57604051630181dcf160e41b8152602090f35b600080fd5b6000366003190112604f576397a657c960e01b8152602090f3fea2646970667358221220144b3fb72dfe86ce401736de6bc1020caddc1068a6b260fa2ef88d113063170764736f6c634300081c0033",
+  "deployedBytecode": "0x6080806040526004361015601257600080fd5b60003560e01c9081633ab8c0d01460545750638113c57814603257600080fd5b6000366003190112604f57604051630181dcf160e41b8152602090f35b600080fd5b6000366003190112604f576397a657c960e01b8152602090f3fea2646970667358221220144b3fb72dfe86ce401736de6bc1020caddc1068a6b260fa2ef88d113063170764736f6c634300081c0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

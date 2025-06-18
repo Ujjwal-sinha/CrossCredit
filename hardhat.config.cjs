@@ -1,16 +1,40 @@
-require('dotenv').config();
+require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
 
-/** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.28",
+  solidity: {
+    compilers: [
+      {
+        version: "0.8.19",
+        settings: {
+          optimizer: { enabled: true, runs: 200 },
+          viaIR: true,
+        },
+      },
+      {
+        version: "0.8.20",
+        settings: {
+          optimizer: { enabled: true, runs: 200 },
+          viaIR: true,
+        },
+      },
+      {
+        version: "0.8.28",
+        settings: {
+          optimizer: { enabled: true, runs: 200 },
+          viaIR: true,
+        },
+      },
+    ],
+  },
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
       chainId: 31337,
-      allowUnlimitedContractSize: true, // Useful for local testing
+      allowUnlimitedContractSize: true,
     },
     sepolia: {
-      url: process.env.SEPOLIA_RPC_URL,
+      url: process.env.SEPOLIA_RPC_URL || "",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 11155111,
       saveDeployments: true,
@@ -18,7 +42,7 @@ module.exports = {
       gasPrice: "auto",
     },
     arbitrum: {
-      url: process.env.ARBITRUM_RPC_URL,
+      url: process.env.ARBITRUM_RPC_URL || "",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 421614,
       saveDeployments: true,
@@ -26,7 +50,7 @@ module.exports = {
       gasPrice: "auto",
     },
     amoy: {
-      url: process.env.AMOY_RPC_URL,
+      url: process.env.AMOY_RPC_URL || "",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 80002,
       saveDeployments: true,
@@ -34,7 +58,7 @@ module.exports = {
       gasPrice: "auto",
     },
     optimism: {
-      url: process.env.OPTIMISM_RPC_URL,
+      url: process.env.OPTIMISM_RPC_URL || "",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 11155420,
       saveDeployments: true,
@@ -42,7 +66,7 @@ module.exports = {
       gasPrice: "auto",
     },
     fuji: {
-      url: process.env.FUJI_RPC_URL,
+      url: process.env.FUJI_RPC_URL || "",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 43113,
       saveDeployments: true,
@@ -50,7 +74,7 @@ module.exports = {
       gasPrice: "auto",
     },
     base: {
-      url: process.env.BASE_RPC_URL,
+      url: process.env.BASE_RPC_URL || "",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 84532,
       saveDeployments: true,
@@ -62,9 +86,9 @@ module.exports = {
     sources: "./contracts",
     tests: "./test",
     cache: "./cache",
-    artifacts: "./artifacts"
+    artifacts: "./artifacts",
   },
   mocha: {
-    timeout: 40000
+    timeout: 40000,
   },
 };
