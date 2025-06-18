@@ -1,0 +1,70 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "MockAggregatorV3",
+  "sourceName": "contracts/mocks/MockAggregatorV3.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "decimals",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "latestRoundData",
+      "outputs": [
+        {
+          "internalType": "uint80",
+          "name": "roundId",
+          "type": "uint80"
+        },
+        {
+          "internalType": "int256",
+          "name": "answer",
+          "type": "int256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "startedAt",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "updatedAt",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint80",
+          "name": "answeredInRound",
+          "type": "uint80"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "int256",
+          "name": "_price",
+          "type": "int256"
+        }
+      ],
+      "name": "setPrice",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60808060405234602157600860ff19600154161760015560e290816100278239f35b600080fdfe6080806040526004361015601257600080fd5b60003560e01c908163313ce56714609057508063f7a308061460795763feaf968c14603c57600080fd5b34607457600036600319011260745760a060005460405190600082526020820152600060408201526000606082015260006080820152f35b600080fd5b346074576020366003190112607457600435600055005b34607457600036600319011260745760209060ff600154168152f3fea264697066735822122041e31bc1560527e9f73bf835bf3f9b2ea1bfa060cdff4ca07ecd91794571b39364736f6c634300081c0033",
+  "deployedBytecode": "0x6080806040526004361015601257600080fd5b60003560e01c908163313ce56714609057508063f7a308061460795763feaf968c14603c57600080fd5b34607457600036600319011260745760a060005460405190600082526020820152600060408201526000606082015260006080820152f35b600080fd5b346074576020366003190112607457600435600055005b34607457600036600319011260745760209060ff600154168152f3fea264697066735822122041e31bc1560527e9f73bf835bf3f9b2ea1bfa060cdff4ca07ecd91794571b39364736f6c634300081c0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

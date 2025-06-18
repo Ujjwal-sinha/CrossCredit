@@ -1,0 +1,82 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "MockFunctionsRouter",
+  "sourceName": "contracts/mocks/MockRouter.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "requestId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "subscriptionId",
+          "type": "uint64"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint32",
+          "name": "gasLimit",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "donId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "RequestSent",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint64",
+          "name": "subscriptionId",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint32",
+          "name": "gasLimit",
+          "type": "uint32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "donId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "sendRequest",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "requestId",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080806040523460155761020a908161001b8239f35b600080fdfe608080604052600436101561001357600080fd5b60003560e01c637cf1f26e1461002857600080fd5b346101745760803660031901126101745760043567ffffffffffffffff8111610174573660238201121561017457806004013567ffffffffffffffff81116101795761007e601f8201601f19166020018461018f565b80835260208301913660248383010111610174578160009260246020930185378401015260243567ffffffffffffffff8116809103610174576044359163ffffffff83168093036101745761014e60a06020957f2a85ba6d0dafcd73f5f0c73d61781b213a2d45b8f11813745fd45e141dd172c293604051888101904282523360601b604082015261012c605482865161011b81848401896101b1565b81010301601f19810183528261018f565b51902096879660405195869460808652518094816080880152878701906101b1565b838a015260408301526064356060830152601f01601f19168101030190a2604051908152f35b600080fd5b634e487b7160e01b600052604160045260246000fd5b90601f8019910116810190811067ffffffffffffffff82111761017957604052565b60005b8381106101c45750506000910152565b81810151838201526020016101b456fea26469706673582212208b9e09538ada76b4d85fac8f988fa69562b6de25cd3b679bc035938b8bdbd85d64736f6c634300081c0033",
+  "deployedBytecode": "0x608080604052600436101561001357600080fd5b60003560e01c637cf1f26e1461002857600080fd5b346101745760803660031901126101745760043567ffffffffffffffff8111610174573660238201121561017457806004013567ffffffffffffffff81116101795761007e601f8201601f19166020018461018f565b80835260208301913660248383010111610174578160009260246020930185378401015260243567ffffffffffffffff8116809103610174576044359163ffffffff83168093036101745761014e60a06020957f2a85ba6d0dafcd73f5f0c73d61781b213a2d45b8f11813745fd45e141dd172c293604051888101904282523360601b604082015261012c605482865161011b81848401896101b1565b81010301601f19810183528261018f565b51902096879660405195869460808652518094816080880152878701906101b1565b838a015260408301526064356060830152601f01601f19168101030190a2604051908152f35b600080fd5b634e487b7160e01b600052604160045260246000fd5b90601f8019910116810190811067ffffffffffffffff82111761017957604052565b60005b8381106101c45750506000910152565b81810151838201526020016101b456fea26469706673582212208b9e09538ada76b4d85fac8f988fa69562b6de25cd3b679bc035938b8bdbd85d64736f6c634300081c0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
