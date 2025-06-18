@@ -1,132 +1,156 @@
+// SPDX-License-Identifier: MIT
 import { expect } from "chai";
-import { ethers } from "hardhat";
-
-// Mock contracts for testing
-const MockRouterClientABI = [
-  "function getFee(uint64 destinationChainSelector, tuple(bytes receiver, bytes data, tuple(address token, uint256 amount)[] tokenAmounts, bytes extraArgs) external view returns (uint256)",
-  "function ccipSend(uint64 destinationChainSelector, tuple(bytes receiver, bytes data, tuple(address token, uint256 amount)[] tokenAmounts, bytes extraArgs, address feeToken) external payable returns (bytes32)",
-];
-const MockERC20ABI = [
-  "function balanceOf(address account) external view returns (uint256)",
-  "function transferFrom(address from, address to, uint256 amount) external returns (bool)",
-  "function transfer(address to, uint256 amount) external returns (bool)",
-  "function approve(address spender, uint256 amount) external returns (bool)",
-];
+import pkg from "hardhat";
+const { ethers } = pkg;
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("Depositor", function () {
-  let Depositor, depositor;
-  let MockRouterClient, mockRouter;
-  let MockERC20, mockToken;
-  let owner, user1, user2, mainRouter, unauthorized;
-  const MAIN_ROUTER_CHAIN_SELECTOR = 1234567890n; // Example chain selector
-  const TOKEN_AMOUNT = ethers.parseUnits("100", 18);
-  const INITIAL_BALANCE = ethers.parseUnits("1000", 18);
+  // Fixture to deploy the contract and set up initial state
+  async function deployDepositorFixture() {
+    const signers = await ethers.getSigners();
+    if (signers.length < 6) {
+      throw new Error("Insufficient signers available");
+    }
+    const [owner, user1, user2, beneficiary, mainRouter, unauthorized] = signers;
 
-  beforeEach(async function () {
-    // Get signers
-    [owner, user1, user2, mainRouter, unauthorized] = await ethers.getSigners();
-
-    // Deploy mock RouterClient
-    MockRouterClient = await ethers.getContractFactoryFromArtifact({
-      abi: MockRouterClientABI,
-      bytecode: {
-        object: "0x608060405234801561001057600080fd5b506101be806100206000396000f3fe60806040526000366000803760008036600060405160200161009c5760405162461bcd60e51b815260206004820152602660248201527f546869732069732061206d6f636b20636f6e747261637420666f722074657374696e60448201526567206f6e6c7960c01b6064820152608401600080fd5b60008036818060006040516020016100c45760405162461bcd60e51b8152600401600080fd5b60408051602081018390527f00000000000000000000000000000000000000000000000000000000000000c8815260006020820152600160408201526000908101905060006001600160a01b0316630f2d83a960e01b8252600482015260248101829052604481018290526000606482018190526000608482015260a482019390935260c401602060405180830381855afa15801561015d573d6000803e3d6000fd5b5050506040513d601f19601f8201168201806040525081019061017f9190610186565b91509150935093509350935093565b60006020828403121561019857600080fd5b81516001600160a01b03811681146101af57600080fd5b9392505050565b60e4806101bc6000396000f3fe",
-      },
+    // Validate signers
+    [owner, user1, user2, beneficiary, mainRouter, unauthorized].forEach((signer, index) => {
+      if (!signer || !signer.address) {
+        throw new Error(`Signer at index ${index} is null or invalid`);
+      }
     });
-    mockRouter = await MockRouterClient.deploy();
-    await mockRouter.waitForDeployment();
 
-    // Deploy mock ERC20 token
-    MockERC20 = await ethers.getContractFactoryFromArtifact({
-      abi: MockERC20ABI,
-      bytecode: {
-        object: "0x608060405234801561001057600080fd5b5061030f806100206000396000f3fe608060405234801561001057600080fd5b506004361061004c5760003560e01c8063095ea7b31461005157806370a0823114610076578063a9059cbb1461009b578063dd62ed3e146100c0575b600080fd5b61006461005f3660046101e7565b6100e8565b60405190151581526020015b60405180910390f35b61008e610084366004610211565b60016020526000908152604090205481565b60405190815260200161006d575b6100646100a93660046101e7565b61011e565b61008e6100ce366004610233565b60026020526000908152604090205481565b6001600160a01b0383166000908152600260205260408120541115610115576001600160a01b0383166000908152600160205260409020548082111561011557600080fd5b5061011b8284610272565b5060015b92915050565b6001600160a01b0383166000908152600160205260408120548082111561013e57600080fd5b6001600160a01b03831660009081526001602052604090205461015e90836102a4565b6001600160a01b038416600090815260016020908152604090912082905561018290836102bc565b5060015b92915050565b80356001600160a01b038116811461019f57600080fd5b919050565b60008083601f8401126101b657600080fd5b50813567ffffffffffffffff8111156101ce57600080fd5b6020830191508360208285010111156101e657600080fd5b505050505050565b600080604083850312156101fa57600080fd5b61020383610188565b91506101e68260208401610188565b60006020828403121561022357600080fd5b61022c82610188565b9392505050565b6000806040838503121561024657600080fd5b61024f83610188565b915061025d60208401610188565b90509250929050565b60008282101561028257634e487b7160e01b600052601160045260246000fd5b500390565b634e487b7160e01b600052601160045260246000fd5b600082198211156102b7576102b7610289565b500190565b60008160001904831182151516156102d6576102d6610289565b500290565b80356001600160a01b038116811461019f57600080fd5b919050565b60006020828403121561030257600080fd5b61022c826102de565b60006020828403121561031e57600080fd5b5035919050565b60006020828403121561033757600080fd5b813567ffffffffffffffff81111561034e57600080fd5b8201604084015261035f816101a4565b5061036c60208285016102de565b91505092915050565b634e487b7160e01b600052604160045260246000fd5b604051601f8201601f1916810167ffffffffffffffff811182821017156103b2576103b2610375565b60405290565b600067ffffffffffffffff8211156103d2576103d2610375565b5060051b60200190565b6000604082840312156103ee57600080fd5b6103f6610389565b9050813567ffffffffffffffff81111561040f57600080fd5b8201601f8101841361042057600080fd5b61042f84825160208460051b016103b8565b50949350505050565b6000806040838503121561044e57600080fd5b610457836102de565b9150610465602084016102de565b90509250929050565b60006020828403121561048057600080fd5b813567ffffffffffffffff81111561049757600080fd5b6104a384828501610375565b94935050505056",
-      },
-    });
-    mockToken = await MockERC20.deploy();
-    await mockToken.waitForDeployment();
+    // Deploy a mock ERC20 token for testing
+    const MockERC20 = await ethers.getContractFactory("MockERC20");
+    const token = await MockERC20.deploy("Test Token", "TST", ethers.parseEther("1000000"));
+    await token.waitForDeployment();
+    if (!token.target) {
+      throw new Error("MockERC20 deployment failed: contract address is null");
+    }
 
-    // Set up mock token balance for user1
-    await mockToken.connect(user1).approve(user1.address, INITIAL_BALANCE);
-    await mockToken.connect(user1).transfer(user1.address, INITIAL_BALANCE);
+    // Deploy a mock CCIP Router
+    const MockRouter = await ethers.getContractFactory("MockRouter");
+    const router = await MockRouter.deploy();
+    await router.waitForDeployment();
+    if (!router.target) {
+      throw new Error("MockRouter deployment failed: contract address is null");
+    }
 
-    // Deploy Depositor contract
-    Depositor = await ethers.getContractFactory("Depositor");
-    depositor = await Depositor.deploy(
-      mockRouter.address,
-      MAIN_ROUTER_CHAIN_SELECTOR,
-      mainRouter.address
+    // Constants for the test
+    const mainRouterChainSelector = 1234567890n;
+    const mainRouterAddress = mainRouter.address;
+    if (!mainRouterAddress) {
+      throw new Error("mainRouterAddress is null");
+    }
+
+    // Deploy the Depositor contract
+    const Depositor = await ethers.getContractFactory("Depositor");
+    const depositor = await Depositor.deploy(
+      router.target,
+      mainRouterChainSelector,
+      mainRouterAddress
     );
     await depositor.waitForDeployment();
+    if (!depositor.target) {
+      throw new Error("Depositor deployment failed: contract address is null");
+    }
 
-    // Add supported token
-    await depositor.connect(owner).addSupportedToken(mockToken.address);
-  });
+    // Fund Depositor with ETH for CCIP fees
+    await owner.sendTransaction({ to: depositor.target, value: ethers.parseEther("1") });
+
+    // Mint tokens to user1 for testing
+    await token.connect(owner).transfer(user1.address, ethers.parseEther("1000"));
+
+    return {
+      depositor,
+      token,
+      router,
+      owner,
+      user1,
+      user2,
+      beneficiary,
+      mainRouter,
+      unauthorized,
+      mainRouterChainSelector,
+      mainRouterAddress,
+    };
+  }
 
   describe("Deployment", function () {
-    it("should deploy successfully with correct parameters", async function () {
-      expect(depositor.target).to.be.properAddress;
-      expect(await depositor.s_router()).to.equal(mockRouter.address);
-      expect(await depositor.MAIN_ROUTER_CHAIN_SELECTOR()).to.equal(MAIN_ROUTER_CHAIN_SELECTOR);
-      expect(await depositor.MAIN_ROUTER_ADDRESS()).to.equal(mainRouter.address);
-      expect(await depositor.allowlistedDestinationChains(MAIN_ROUTER_CHAIN_SELECTOR)).to.be.true;
-      expect(await depositor.allowlistedSenders(mainRouter.address)).to.be.true;
-      expect(await depositor.isTokenSupported(mockToken.address)).to.be.true;
+    it("should set the correct main router chain selector and address", async function () {
+      const { depositor, mainRouterChainSelector, mainRouterAddress } = await loadFixture(deployDepositorFixture);
+      expect(await depositor.MAIN_ROUTER_CHAIN_SELECTOR()).to.equal(mainRouterChainSelector);
+      expect(await depositor.MAIN_ROUTER_ADDRESS()).to.equal(mainRouterAddress);
     });
 
-    it("should revert if router is zero address", async function () {
-      await expect(
-        Depositor.deploy(ethers.ZeroAddress, MAIN_ROUTER_CHAIN_SELECTOR, mainRouter.address)
-      ).to.be.revertedWithCustomError(Depositor, "ZeroAddress");
+    it("should set the owner as the deployer", async function () {
+      const { depositor, owner } = await loadFixture(deployDepositorFixture);
+      expect(await depositor.owner()).to.equal(owner.address);
     });
 
-    it("should revert if mainRouterAddress is zero address", async function () {
+    it("should allowlist main router chain and address by default", async function () {
+      const { depositor, mainRouterChainSelector, mainRouterAddress } = await loadFixture(deployDepositorFixture);
+      expect(await depositor.allowlistedDestinationChains(mainRouterChainSelector)).to.be.true;
+      expect(await depositor.allowlistedSenders(mainRouterAddress)).to.be.true;
+    });
+
+    it("should revert if router or main router address is zero", async function () {
+      const { mainRouterChainSelector, mainRouterAddress, router } = await loadFixture(deployDepositorFixture);
+      const Depositor = await ethers.getContractFactory("Depositor");
       await expect(
-        Depositor.deploy(mockRouter.address, MAIN_ROUTER_CHAIN_SELECTOR, ethers.ZeroAddress)
+        Depositor.deploy(ethers.ZeroAddress, mainRouterChainSelector, mainRouterAddress)
+      ).to.be.revertedWithCustomError(Depositor, "InvalidRouter");
+      await expect(
+        Depositor.deploy(router.target, mainRouterChainSelector, ethers.ZeroAddress)
       ).to.be.revertedWithCustomError(Depositor, "ZeroAddress");
     });
   });
 
   describe("Administration", function () {
-    it("should allowlist a destination chain", async function () {
-      const newChainSelector = 9876543210n;
-      await depositor.connect(owner).allowlistDestinationChain(newChainSelector, true);
-      expect(await depositor.allowlistedDestinationChains(newChainSelector)).to.be.true;
+    it("should allow owner to allowlist a destination chain", async function () {
+      const { depositor, owner } = await loadFixture(deployDepositorFixture);
+      const chainSelector = 987654321n;
+      await depositor.connect(owner).allowlistDestinationChain(chainSelector, true);
+      expect(await depositor.allowlistedDestinationChains(chainSelector)).to.be.true;
+      await depositor.connect(owner).allowlistDestinationChain(chainSelector, false);
+      expect(await depositor.allowlistedDestinationChains(chainSelector)).to.be.false;
     });
 
-    it("should allowlist a source chain", async function () {
-      const newSourceChain = 54321n;
-      await depositor.connect(owner).allowlistSourceChain(newSourceChain, true);
-      expect(await depositor.allowlistedSourceChains(newSourceChain)).to.be.true;
+    it("should allow owner to allowlist a source chain", async function () {
+      const { depositor, owner } = await loadFixture(deployDepositorFixture);
+      const chainSelector = 987654321n;
+      await depositor.connect(owner).allowlistSourceChain(chainSelector, true);
+      expect(await depositor.allowlistedSourceChains(chainSelector)).to.be.true;
+      await depositor.connect(owner).allowlistSourceChain(chainSelector, false);
+      expect(await depositor.allowlistedSourceChains(chainSelector)).to.be.false;
     });
 
-    it("should allowlist a sender", async function () {
+    it("should allow owner to allowlist a sender", async function () {
+      const { depositor, owner, user1 } = await loadFixture(deployDepositorFixture);
       await depositor.connect(owner).allowlistSender(user1.address, true);
       expect(await depositor.allowlistedSenders(user1.address)).to.be.true;
+      await depositor.connect(owner).allowlistSender(user1.address, false);
+      expect(await depositor.allowlistedSenders(user1.address)).to.be.false;
     });
 
-    it("should add a supported token", async function () {
-      const newToken = (await MockERC20.deploy()).target;
-      await depositor.connect(owner).addSupportedToken(newToken);
-      expect(await depositor.isTokenSupported(newToken)).to.be.true;
-      const supportedTokens = await depositor.getSupportedTokens();
-      expect(supportedTokens).to.include(newToken);
+    it("should allow owner to add a supported token", async function () {
+      const { depositor, owner, token } = await loadFixture(deployDepositorFixture);
+      await depositor.connect(owner).addSupportedToken(token.target);
+      expect(await depositor.supportedTokens(token.target)).to.be.true;
+      const tokenList = await depositor.getSupportedTokens();
+      expect(tokenList).to.include(token.target);
     });
 
-    it("should remove a supported token", async function () {
-      await depositor.connect(owner).removeSupportedToken(mockToken.address);
-      expect(await depositor.isTokenSupported(mockToken.address)).to.be.false;
-      const supportedTokens = await depositor.getSupportedTokens();
-      expect(supportedTokens).to.not.include(mockToken.address);
-    });
-
-    it("should revert if non-owner tries to add supported token", async function () {
+    it("should revert if non-owner tries to allowlist a destination chain", async function () {
+      const { depositor, unauthorized } = await loadFixture(deployDepositorFixture);
+      const chainSelector = 987654321n;
       await expect(
-        depositor.connect(user1).addSupportedToken(mockToken.address)
-      ).to.be.revertedWithCustomError(depositor, "OwnableUnauthorizedAccount");
+        depositor.connect(unauthorized).allowlistDestinationChain(chainSelector, true)
+      ).to.be.revertedWith("Only callable by owner");
     });
 
     it("should revert if adding zero address as supported token", async function () {
+      const { depositor, owner } = await loadFixture(deployDepositorFixture);
       await expect(
         depositor.connect(owner).addSupportedToken(ethers.ZeroAddress)
       ).to.be.revertedWithCustomError(depositor, "ZeroAddress");
@@ -134,155 +158,297 @@ describe("Depositor", function () {
   });
 
   describe("Token Deposits", function () {
-    beforeEach(async function () {
-      // Approve tokens for depositor
-      await mockToken.connect(user1).approve(depositor.target, TOKEN_AMOUNT);
-    });
+    it("should allow user to deposit supported tokens", async function () {
+      const { depositor, token, user1, owner, mainRouterChainSelector, mainRouterAddress } = await loadFixture(deployDepositorFixture);
+      const amount = ethers.parseEther("100");
 
-    it("should deposit tokens successfully", async function () {
-      const initialBalance = await mockToken.balanceOf(user1.address);
-      const tx = await depositor.connect(user1).depositToken(mockToken.address, TOKEN_AMOUNT);
-      const receipt = await tx.wait();
+      // Add token as supported
+      await depositor.connect(owner).addSupportedToken(token.target);
 
-      // Check user deposit tracking
-      expect(await depositor.getUserDeposit(user1.address, mockToken.address)).to.equal(TOKEN_AMOUNT);
-      expect(await mockToken.balanceOf(depositor.target)).to.equal(TOKEN_AMOUNT);
-      expect(await mockToken.balanceOf(user1.address)).to.equal(initialBalance - TOKEN_AMOUNT);
+      // Approve tokens
+      await token.connect(user1).approve(depositor.target, amount);
 
-      // Check event
+      // Deposit tokens
+      const tx = await depositor.connect(user1).depositToken(token.target, amount);
       await expect(tx)
         .to.emit(depositor, "TokenDeposited")
-        .withArgs(user1.address, mockToken.address, TOKEN_AMOUNT, ethers.HashZero); // Mock router returns 0
+        .withArgs(user1.address, token.target, amount, ethers.isBytesLike);
+      await expect(tx)
+        .to.emit(depositor, "MessageSent")
+        .withArgs(ethers.isBytesLike, mainRouterChainSelector, mainRouterAddress, ethers.parseEther("0.01"));
+
+      expect(await depositor.getUserDeposit(user1.address, token.target)).to.equal(amount);
+      expect(await token.balanceOf(depositor.target)).to.equal(amount);
     });
 
-    it("should revert if token is not supported", async function () {
-      const unsupportedToken = (await MockERC20.deploy()).target;
+    it("should revert if depositing zero amount", async function () {
+      const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
+      await depositor.connect(owner).addSupportedToken(token.target);
       await expect(
-        depositor.connect(user1).depositToken(unsupportedToken, TOKEN_AMOUNT)
-      ).to.be.revertedWithCustomError(depositor, "TokenNotSupported");
-    });
-
-    it("should revert if amount is zero", async function () {
-      await expect(
-        depositor.connect(user1).depositToken(mockToken.address, 0)
+        depositor.connect(user1).depositToken(token.target, 0)
       ).to.be.revertedWithCustomError(depositor, "ZeroAmount");
     });
 
-    it("should revert if insufficient token balance", async function () {
-      const largeAmount = INITIAL_BALANCE + 1n;
+    it("should revert if token is not supported", async function () {
+      const { depositor, token, user1 } = await loadFixture(deployDepositorFixture);
+      const amount = ethers.parseEther("100");
       await expect(
-        depositor.connect(user1).depositToken(mockToken.address, largeAmount)
-      ).to.be.revertedWithCustomError(depositor, "InsufficientTokenBalance");
+        depositor.connect(user1).depositToken(token.target, amount)
+      ).to.be.revertedWithCustomError(depositor, "TokenNotSupported").withArgs(token.target);
+    });
+
+    it("should revert if user has insufficient token balance", async function () {
+      const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
+      const amount = ethers.parseEther("2000");
+      await depositor.connect(owner).addSupportedToken(token.target);
+      await token.connect(user1).approve(depositor.target, amount);
+      await expect(
+        depositor.connect(user1).depositToken(token.target, amount)
+      ).to.be.revertedWithCustomError(depositor, "InsufficientTokenBalance").withArgs(amount, ethers.parseEther("1000"));
+    });
+
+    it("should revert if contract has insufficient ETH for CCIP fees", async function () {
+      const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
+      const amount = ethers.parseEther("100");
+
+      // Add token as supported
+      await depositor.connect(owner).addSupportedToken(token.target);
+
+      // Approve tokens
+      await token.connect(user1).approve(depositor.target, amount);
+
+      // Withdraw all ETH from contract
+      await depositor.connect(owner).withdraw(owner.address);
+
+      await expect(
+        depositor.connect(user1).depositToken(token.target, amount)
+      ).to.be.revertedWithCustomError(depositor, "NotEnoughBalance");
     });
   });
 
   describe("Token Withdrawals", function () {
-    beforeEach(async function () {
-      await mockToken.connect(user1).approve(depositor.target, TOKEN_AMOUNT);
-      await depositor.connect(user1).depositToken(mockToken.address, TOKEN_AMOUNT);
-    });
+    it("should allow user to withdraw deposited tokens", async function () {
+      const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
+      const amount = ethers.parseEther("100");
 
-    it("should withdraw tokens successfully", async function () {
-      const initialBalance = await mockToken.balanceOf(user1.address);
-      const tx = await depositor.connect(user1).withdrawToken(mockToken.address, TOKEN_AMOUNT);
-      const receipt = await tx.wait();
+      // Add token as supported
+      await depositor.connect(owner).addSupportedToken(token.target);
 
-      // Check user deposit tracking
-      expect(await depositor.getUserDeposit(user1.address, mockToken.address)).to.equal(0);
-      expect(await mockToken.balanceOf(depositor.target)).to.equal(0);
-      expect(await mockToken.balanceOf(user1.address)).to.equal(initialBalance + TOKEN_AMOUNT);
+      // Deposit tokens
+      await token.connect(user1).approve(depositor.target, amount);
+      await depositor.connect(user1).depositToken(token.target, amount);
 
-      // Check event
-      await expect(tx)
+      // Withdraw tokens
+      await expect(depositor.connect(user1)["withdrawToken(address,uint256)"](token.target, amount))
         .to.emit(depositor, "TokenWithdrawn")
-        .withArgs(user1.address, mockToken.address, TOKEN_AMOUNT);
+        .withArgs(user1.address, token.target, amount);
+
+      expect(await depositor.getUserDeposit(user1.address, token.target)).to.equal(0);
+      expect(await token.balanceOf(user1.address)).to.equal(ethers.parseEther("1000"));
     });
 
-    it("should revert if insufficient deposited amount", async function () {
-      const largeAmount = TOKEN_AMOUNT + 1n;
+    it("should revert if withdrawing zero amount", async function () {
+      const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
+      await depositor.connect(owner).addSupportedToken(token.target);
       await expect(
-        depositor.connect(user1).withdrawToken(mockToken.address, largeAmount)
-      ).to.be.revertedWithCustomError(depositor, "InsufficientTokenBalance");
+        depositor.connect(user1)["withdrawToken(address,uint256)"](token.target, 0)
+      ).to.be.revertedWithCustomError(depositor, "ZeroAmount");
+    });
+
+    it("should revert if user has insufficient deposited balance", async function () {
+      const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
+      const amount = ethers.parseEther("100");
+      await depositor.connect(owner).addSupportedToken(token.target);
+      await expect(
+        depositor.connect(user1)["withdrawToken(address,uint256)"](token.target, amount)
+      ).to.be.revertedWithCustomError(depositor, "InsufficientTokenBalance").withArgs(amount, 0);
     });
 
     it("should revert if token is not supported", async function () {
-      const unsupportedToken = (await MockERC20.deploy()).target;
+      const { depositor, token, user1 } = await loadFixture(deployDepositorFixture);
+      const amount = ethers.parseEther("100");
       await expect(
-        depositor.connect(user1).withdrawToken(unsupportedToken, TOKEN_AMOUNT)
-      ).to.be.revertedWithCustomError(depositor, "TokenNotSupported");
-    });
-
-    it("should revert if amount is zero", async function () {
-      await expect(
-        depositor.connect(user1).withdrawToken(mockToken.address, 0)
-      ).to.be.revertedWithCustomError(depositor, "ZeroAmount");
+        depositor.connect(user1)["withdrawToken(address,uint256)"](token.target, amount)
+      ).to.be.revertedWithCustomError(depositor, "TokenNotSupported").withArgs(token.target);
     });
   });
 
-  describe("Emergency Withdrawals", function () {
-    it("should withdraw ETH successfully", async function () {
-      // Send ETH to contract
+  describe("CCIP Messaging", function () {
+    async function impersonateRouter(routerAddress, provider) {
+      // Fund the router address with ETH to allow transaction sending
+      // Convert BigInt to hex string properly
       const ethAmount = ethers.parseEther("1");
-      await owner.sendTransaction({ to: depositor.target, value: ethAmount });
-      const initialBalance = await ethers.provider.getBalance(owner.address);
+      const hexAmount = "0x" + ethAmount.toString(16);
+      await provider.send("hardhat_setBalance", [routerAddress, hexAmount]);
+      // Impersonate the router address
+      await provider.send("hardhat_impersonateAccount", [routerAddress]);
+      return ethers.getSigner(routerAddress);
+    }
 
-      const tx = await depositor.connect(owner).withdraw(owner.address);
-      const receipt = await tx.wait();
+    it("should receive and process incoming CCIP messages from allowlisted sender", async function () {
+      const { depositor, router, owner, mainRouter, mainRouterChainSelector } = await loadFixture(deployDepositorFixture);
+      const messageId = ethers.randomBytes(32);
+      const message = "test message";
 
-      const finalBalance = await ethers.provider.getBalance(owner.address);
-      expect(finalBalance).to.be.closeTo(initialBalance + ethAmount, ethers.parseEther("0.01"));
+      // Allowlist source chain
+      await depositor.connect(owner).allowlistSourceChain(mainRouterChainSelector, true);
+
+      // Impersonate the router
+      const routerSigner = await impersonateRouter(router.target, ethers.provider);
+
+      // Simulate CCIP message receipt from router
+      const any2EvmMessage = {
+        messageId: messageId,
+        sourceChainSelector: mainRouterChainSelector,
+        sender: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [mainRouter.address]),
+        data: ethers.AbiCoder.defaultAbiCoder().encode(["string"], [message]),
+        destTokenAmounts: []
+      };
+
+      await expect(
+        depositor.connect(routerSigner).ccipReceive(any2EvmMessage)
+      )
+        .to.emit(depositor, "MessageReceived")
+        .withArgs(messageId, mainRouterChainSelector, mainRouter.address, message);
+
+      // Stop impersonating
+      await ethers.provider.send("hardhat_stopImpersonatingAccount", [router.target]);
     });
 
-    it("should withdraw tokens successfully as owner", async function () {
-      await mockToken.connect(user1).approve(depositor.target, TOKEN_AMOUNT);
-      await depositor.connect(user1).depositToken(mockToken.address, TOKEN_AMOUNT);
+    it("should revert if source chain is not allowlisted", async function () {
+      const { depositor, router, mainRouter } = await loadFixture(deployDepositorFixture);
+      const messageId = ethers.randomBytes(32);
+      const invalidChainSelector = 999999999n;
+      const message = "test message";
 
-      const initialBalance = await mockToken.balanceOf(owner.address);
-      const tx = await depositor.connect(owner).withdrawToken(owner.address, mockToken.address);
-      const receipt = await tx.wait();
+      // Impersonate the router
+      const routerSigner = await impersonateRouter(router.target, ethers.provider);
 
-      expect(await mockToken.balanceOf(owner.address)).to.equal(initialBalance + TOKEN_AMOUNT);
-      expect(await mockToken.balanceOf(depositor.target)).to.equal(0);
+      const any2EvmMessage = {
+        messageId: messageId,
+        sourceChainSelector: invalidChainSelector,
+        sender: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [mainRouter.address]),
+        data: ethers.AbiCoder.defaultAbiCoder().encode(["string"], [message]),
+        destTokenAmounts: []
+      };
+
+      await expect(
+        depositor.connect(routerSigner).ccipReceive(any2EvmMessage)
+      ).to.be.revertedWithCustomError(depositor, "SourceChainNotAllowed").withArgs(invalidChainSelector);
+
+      // Stop impersonating
+      await ethers.provider.send("hardhat_stopImpersonatingAccount", [router.target]);
+    });
+
+    it("should revert if sender is not allowlisted", async function () {
+      const { depositor, router, owner, unauthorized, mainRouterChainSelector } = await loadFixture(deployDepositorFixture);
+      const messageId = ethers.randomBytes(32);
+      const message = "test message";
+
+      // Allowlist source chain
+      await depositor.connect(owner).allowlistSourceChain(mainRouterChainSelector, true);
+
+      // Impersonate the router
+      const routerSigner = await impersonateRouter(router.target, ethers.provider);
+
+      const any2EvmMessage = {
+        messageId: messageId,
+        sourceChainSelector: mainRouterChainSelector,
+        sender: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [unauthorized.address]),
+        data: ethers.AbiCoder.defaultAbiCoder().encode(["string"], [message]),
+        destTokenAmounts: []
+      };
+
+      await expect(
+        depositor.connect(routerSigner).ccipReceive(any2EvmMessage)
+      ).to.be.revertedWithCustomError(depositor, "SenderNotAllowed").withArgs(unauthorized.address);
+
+      // Stop impersonating
+      await ethers.provider.send("hardhat_stopImpersonatingAccount", [router.target]);
+    });
+  });
+
+  describe("Emergency Functions", function () {
+    it("should allow owner to withdraw ETH", async function () {
+      const { depositor, owner, beneficiary } = await loadFixture(deployDepositorFixture);
+      const amount = ethers.parseEther("0.5");
+
+      // Send additional ETH to contract
+      await owner.sendTransaction({ to: depositor.target, value: amount });
+
+      const initialBalance = await ethers.provider.getBalance(beneficiary.address);
+      await depositor.connect(owner).withdraw(beneficiary.address);
+      const finalBalance = await ethers.provider.getBalance(beneficiary.address);
+
+      expect(finalBalance - initialBalance).to.equal(ethers.parseEther("1.5")); // 1 ETH from fixture + 0.5 ETH
+    });
+
+    it("should allow owner to withdraw tokens", async function () {
+      const { depositor, token, owner, beneficiary } = await loadFixture(deployDepositorFixture);
+      const amount = ethers.parseEther("100");
+
+      // Send tokens to contract
+      await token.connect(owner).transfer(depositor.target, amount);
+
+      await depositor.connect(owner)["withdrawToken(address,address)"](beneficiary.address, token.target);
+      expect(await token.balanceOf(beneficiary.address)).to.equal(amount);
+    });
+
+    it("should revert if withdrawing zero ETH", async function () {
+      const { depositor, owner, beneficiary } = await loadFixture(deployDepositorFixture);
+      // Withdraw all ETH first
+      await depositor.connect(owner).withdraw(owner.address);
+      await expect(
+        depositor.connect(owner).withdraw(beneficiary.address)
+      ).to.be.revertedWithCustomError(depositor, "NothingToWithdraw");
+    });
+
+    it("should revert if withdrawing zero tokens", async function () {
+      const { depositor, token, owner, beneficiary } = await loadFixture(deployDepositorFixture);
+      await expect(
+        depositor.connect(owner)["withdrawToken(address,address)"](beneficiary.address, token.target)
+      ).to.be.revertedWithCustomError(depositor, "NothingToWithdraw");
     });
 
     it("should revert if non-owner tries to withdraw ETH", async function () {
+      const { depositor, unauthorized, beneficiary } = await loadFixture(deployDepositorFixture);
       await expect(
-        depositor.connect(user1).withdraw(user1.address)
-      ).to.be.revertedWithCustomError(depositor, "OwnableUnauthorizedAccount");
-    });
-
-    it("should revert if nothing to withdraw (ETH)", async function () {
-      await expect(
-        depositor.connect(owner).withdraw(owner.address)
-      ).to.be.revertedWithCustomError(depositor, "NothingToWithdraw");
-    });
-
-    it("should revert if nothing to withdraw (token)", async function () {
-      await expect(
-        depositor.connect(owner).withdrawToken(owner.address, mockToken.address)
-      ).to.be.revertedWithCustomError(depositor, "NothingToWithdraw");
+        depositor.connect(unauthorized).withdraw(beneficiary.address)
+      ).to.be.revertedWith("Only callable by owner");
     });
   });
 
   describe("View Functions", function () {
-    beforeEach(async function () {
-      await mockToken.connect(user1).approve(depositor.target, TOKEN_AMOUNT);
-      await depositor.connect(user1).depositToken(mockToken.address, TOKEN_AMOUNT);
+    it("should return correct user deposit amount", async function () {
+      const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
+      const amount = ethers.parseEther("100");
+
+      await depositor.connect(owner).addSupportedToken(token.target);
+      await token.connect(user1).approve(depositor.target, amount);
+      await depositor.connect(user1).depositToken(token.target, amount);
+
+      expect(await depositor.getUserDeposit(user1.address, token.target)).to.equal(amount);
     });
 
-    it("should return user deposit amount", async function () {
-      expect(await depositor.getUserDeposit(user1.address, mockToken.address)).to.equal(TOKEN_AMOUNT);
+    it("should return supported tokens list", async function () {
+      const { depositor, token, owner } = await loadFixture(deployDepositorFixture);
+      await depositor.connect(owner).addSupportedToken(token.target);
+      const tokenList = await depositor.getSupportedTokens();
+      expect(tokenList).to.include(token.target);
     });
 
-    it("should return supported tokens", async function () {
-      const supportedTokens = await depositor.getSupportedTokens();
-      expect(supportedTokens).to.include(mockToken.address);
+    it("should return correct token support status", async function () {
+      const { depositor, token, owner, user1 } = await loadFixture(deployDepositorFixture);
+      await depositor.connect(owner).addSupportedToken(token.target);
+      expect(await depositor.isTokenSupported(token.target)).to.be.true;
+      expect(await depositor.isTokenSupported(user1.address)).to.be.false;
     });
 
-    it("should return token support status", async function () {
-      expect(await depositor.isTokenSupported(mockToken.address)).to.be.true;
-      const unsupportedToken = (await MockERC20.deploy()).target;
-      expect(await depositor.isTokenSupported(unsupportedToken)).to.be.false;
+    it("should return correct deposit message fee", async function () {
+      const { depositor, token, user1 } = await loadFixture(deployDepositorFixture);
+      const amount = ethers.parseEther("100");
+      const fee = await depositor.getDepositMessageFee(user1.address, token.target, amount);
+      expect(fee).to.equal(ethers.parseEther("0.01")); // MockRouter returns 0.01 ETH
     });
-  });
+  })
 });

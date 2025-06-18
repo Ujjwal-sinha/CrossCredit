@@ -1,6 +1,6 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
-const { BigNumber } = ethers;
+import { expect } from "chai";
+import pkg from "hardhat";
+const { ethers } = pkg;
 
 describe("Minter Contract", function () {
   let Minter, minter;
@@ -10,38 +10,42 @@ describe("Minter Contract", function () {
 
   // Constants
   const MAIN_ROUTER_CHAIN_SELECTOR = 1;
-  const MAIN_ROUTER_ADDRESS = ethers.Wallet.createRandom().address;
+  const MAIN_ROUTER_ADDRESS = "0x0000000000000000000000000000000000000000";
   const DSC_NAME = "DeFi Stablecoin";
   const DSC_SYMBOL = "DSC";
   const OTHER_CHAIN_SELECTOR = 2;
-  const OTHER_CHAIN_MINTER = ethers.Wallet.createRandom().address;
-  const MINT_AMOUNT = ethers.utils.parseUnits("1000", 18);
-  const BURN_AMOUNT = ethers.utils.parseUnits("500", 18);
-  const SWAP_AMOUNT = ethers.utils.parseUnits("1000", 18);
-
-  // Mock Router Contract
-  const MockRouter = ethers.getContractFactory("MockRouter");
+  const OTHER_CHAIN_MINTER = "0x0000000000000000000000000000000000000000";
+  const MINT_AMOUNT = ethers.parseUnits("1000", 18);
+  const BURN_AMOUNT = ethers.parseUnits("500", 18);
+  const SWAP_AMOUNT = ethers.parseUnits("1000", 18);
+  const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
   before(async function () {
     [owner, user1, user2] = await ethers.getSigners();
   });
 
   beforeEach(async function () {
-    // Deploy mock router
-    mockRouter = await (await MockRouter).deploy();
+    // Deploy MockRouter first
+    const MockRouter = await ethers.getContractFactory("MockRouter");
+    mockRouter = await MockRouter.deploy();
+    await mockRouter.deployed();
 
     // Deploy Minter contract
-    Minter = await ethers.getContractFactory("Minter");
+    const Minter = await ethers.getContractFactory("Minter");
     minter = await Minter.deploy(
       mockRouter.address,
       MAIN_ROUTER_CHAIN_SELECTOR,
       MAIN_ROUTER_ADDRESS,
       DSC_NAME,
-      DSC_SYMBOL
+      DSC_SYMBOL,
+      ZERO_BYTES32, // Use valid bytes32 for DON ID
+      0 // subscription ID
     );
+    await minter.deployed();
 
     // Get the deployed DSC token
-    dsc = await ethers.getContractAt("DSC", await minter.dscToken());
+    const dscAddress = await minter.dscToken();
+    dsc = await ethers.getContractAt("DSC", dscAddress);
 
     // Setup other chain minter
     await minter.setChainMinter(OTHER_CHAIN_SELECTOR, OTHER_CHAIN_MINTER);
@@ -49,7 +53,7 @@ describe("Minter Contract", function () {
     // Fund the contract with ETH for CCIP fees
     await owner.sendTransaction({
       to: minter.address,
-      value: ethers.utils.parseEther("1")
+      value: ethers.parseEther("1")
     });
   });
 
@@ -167,129 +171,3 @@ describe("Minter Contract", function () {
     });
   });
 });
-
-// Mock contracts
-const MockRouterArtifact = {
-  "abi": [
-    {
-      "inputs": [],
-      "stateMutability": "nonpayable",
-      "type": "constructor"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "receiver",
-          "type": "address"
-        },
-        {
-          "internalType": "uint64",
-          "name": "sourceChainSelector",
-          "type": "uint64"
-        },
-        {
-          "internalType": "address",
-          "name": "sender",
-          "type": "address"
-        },
-        {
-          "internalType": "bytes",
-          "name": "message",
-          "type": "bytes"
-        }
-      ],
-      "name": "simulateCCIPReceive",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "lastResponse",
-      "outputs": [
-        {
-          "internalType": "bytes32",
-          "name": "",
-          "type": "bytes32"
-        }
-      ],
-      "stateMutability": "pure",
-      "type": "function"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "receiver",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "uint64",
-          "name": "sourceChainSelector",
-          "type": "uint64"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "sender",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "bytes",
-          "name": "message",
-          "type": "bytes"
-        }
-      ],
-      "name": "MessageReceived",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "bytes32",
-          "name": "requestId",
-          "type": "bytes32"
-        },
-        {
-          "indexed": false,
-          "internalType": "bytes",
-          "name": "response",
-          "type": "bytes"
-        },
-        {
-          "indexed": false,
-          "internalType": "bytes",
-          "name": "err",
-          "type": "bytes"
-        }
-      ],
-      "name": "Response",
-      "type": "event"
-    }
-  ],
-  "bytecode": "0x...", // Actual bytecode would go here
-  "contractName": "MockRouter",
-  "deployedBytecode": "0x...", // Actual deployed bytecode would go here
-  "sourceName": "contracts/mocks/MockRouter.sol"
-};
-
-// Add mock to Hardhat
-ethers.getContractFactory = async function (name, signer) {
-  if (name === "MockRouter") {
-    return new ethers.ContractFactory(
-      MockRouterArtifact.abi,
-      MockRouterArtifact.bytecode,
-      signer || (await ethers.getSigners())[0]
-    );
-  }
-  return originalGetContractFactory(name, signer);
-};
-
-const originalGetContractFactory = ethers.getContractFactory;

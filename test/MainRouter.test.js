@@ -1,5 +1,6 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+import { expect } from "chai";
+import pkg from "hardhat";
+const { ethers } = pkg;
 
 describe("MainRouter Core Functionality", function () {
   let MainRouter, mainRouter;
@@ -7,8 +8,8 @@ describe("MainRouter Core Functionality", function () {
   let mockRouter, mockToken;
 
   const CHAIN_SELECTOR = 1;
-  const DEPOSIT_AMOUNT = ethers.utils.parseUnits("1000", 18);
-  const BORROW_AMOUNT = ethers.utils.parseUnits("500", 18);
+  const DEPOSIT_AMOUNT = ethers.parseUnits("1000", 18);
+  const BORROW_AMOUNT = ethers.parseUnits("500", 18);
 
   before(async function () {
     [owner, user] = await ethers.getSigners();
@@ -19,14 +20,14 @@ describe("MainRouter Core Functionality", function () {
     
     const MockERC20 = await ethers.getContractFactory("MockERC20");
     mockToken = await MockERC20.deploy("Mock Token", "MOCK", 18);
-    await mockToken.mint(user.address, DEPOSIT_AMOUNT.mul(2));
+    await mockToken.mint(user.address, DEPOSIT_AMOUNT * 2n);
 
     // Deploy MainRouter
     MainRouter = await ethers.getContractFactory("MainRouter");
     mainRouter = await MainRouter.deploy(
       mockRouter.address,
-      ethers.constants.AddressZero, // No FunctionsRouter for this test
-      ethers.constants.HashZero, // No DON ID
+      ethers.ZeroAddress, // No FunctionsRouter for this test
+      ethers.ZeroHash, // No DON ID
       0 // No subscription ID
     );
 
