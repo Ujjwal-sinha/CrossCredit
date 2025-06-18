@@ -159,11 +159,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🏆 Team
 
-Built with ❤️ by the CreditLend team:
-- Smart Contract Engineers
-- Frontend Developers
-- DeFi Researchers
-- Security Experts
+Built with ❤️ by the CreditLend team .
 
 ---
 

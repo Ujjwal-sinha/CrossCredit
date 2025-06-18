@@ -2,6 +2,8 @@ import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Points, PointMaterial } from '@react-three/drei';
 import * as THREE from 'three';
+import GlowingTorus from './GlowingTorus';
+import FloatingRings from './FloatingRings';
 
 const CyberParticles: React.FC = () => {
   const ref = useRef<THREE.Points>(null);
@@ -30,7 +32,7 @@ const CyberParticles: React.FC = () => {
       <PointMaterial
         transparent
         color="#06b6d4"
-        size={0.5}
+        size={0.38} // slightly reduced
         sizeAttenuation={true}
         depthWrite={false}
       />
@@ -84,7 +86,7 @@ const FloatingCubes: React.FC = () => {
           <meshBasicMaterial
             color="#06b6d4"
             transparent
-            opacity={0.3}
+            opacity={0.18} // reduced from 0.3
             wireframe
           />
         </mesh>
@@ -106,6 +108,8 @@ const CyberBackground: React.FC = () => {
         <CyberParticles />
         <CyberGrid />
         <FloatingCubes />
+        <GlowingTorus />
+        <FloatingRings />
       </Canvas>
     </div>
   );

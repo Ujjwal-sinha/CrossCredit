@@ -6,7 +6,7 @@ interface GradientButtonProps {
   onClick?: () => void;
   variant?: 'primary' | 'secondary' | 'outline';
   size?: 'sm' | 'md' | 'lg';
-  icon?: LucideIcon;
+  icon?: typeof LucideIcon;
   iconPosition?: 'left' | 'right';
   disabled?: boolean;
   className?: string;
