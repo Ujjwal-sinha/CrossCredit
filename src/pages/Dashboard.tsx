@@ -62,7 +62,7 @@ const Dashboard: React.FC = () => {
           <motion.div variants={itemVariants}>
             <StatCard
               title="Total Deposited"
-              value="$25,430"
+              value={<span className="text-3xl font-bold bg-gradient-cyber bg-clip-text text-transparent font-orbitron">$25,430</span>}
               icon={DollarSign}
               change="+12.5%"
               changeType="positive"
@@ -71,7 +71,7 @@ const Dashboard: React.FC = () => {
           <motion.div variants={itemVariants}>
             <StatCard
               title="Total Borrowed"
-              value="$18,750"
+              value={<span className="text-3xl font-bold bg-gradient-cyber bg-clip-text text-transparent font-orbitron">$18,750</span>}
               icon={TrendingUp}
               change="+8.2%"
               changeType="positive"
@@ -80,7 +80,7 @@ const Dashboard: React.FC = () => {
           <motion.div variants={itemVariants}>
             <StatCard
               title="Health Factor"
-              value="2.35"
+              value={<span className="text-3xl font-bold text-matrix-400 font-orbitron glow-matrix">2.35</span>}
               icon={Shield}
               change="Safe"
               changeType="positive"
@@ -90,7 +90,7 @@ const Dashboard: React.FC = () => {
           <motion.div variants={itemVariants}>
             <StatCard
               title="Credit Score"
-              value="785"
+              value={<span className="text-3xl font-bold text-cyber-300 font-orbitron glow-cyber">785</span>}
               icon={Award}
               change="+15"
               changeType="positive"
