@@ -38,7 +38,7 @@ const Dashboard: React.FC = () => {
           variants={itemVariants}
         >
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2 font-orbitron neon-text">
+            <h1 className="text-4xl font-bold text-white mb-2 font-orbitron ">
               Command Center
             </h1>
             <p className="text-cyber-400 font-mono">Manage your cross-chain DeFi portfolio</p>

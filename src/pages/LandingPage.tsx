@@ -139,7 +139,7 @@ const LandingPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.2 }}
             >
-              <span className="block neon-text">CrossCredit</span>
+              <span className="block ">CrossCredit</span>
               <span className="block text-2xl sm:text-3xl lg:text-4xl bg-gradient-cyber bg-clip-text text-transparent mt-4">
                 {typedText}
                 <span className="animate-pulse">|</span>
