@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getMockBalances } from '../utils/balances';
+import { getRealBalances } from '../utils/balances';
 
 const router = Router();
 
@@ -10,7 +10,8 @@ router.get('/', async (req: Request, res: Response) => {
   }
 
   try {
-    const balances = await getMockBalances(address);
+    // Fetch real balance data from blockchain
+    const balances = await getRealBalances(address);
     res.json(balances);
   } catch (error) {
     console.error('Error fetching balances:', error);

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getMockTransactionHistory } from '../utils/transactions';
+import { getRealTransactionHistoryData } from '../utils/transactions';
 
 const router = Router();
 
@@ -10,8 +10,9 @@ router.get('/', async (req: Request, res: Response) => {
   }
 
   try {
-    const txHistory = await getMockTransactionHistory(address);
-    res.json(txHistory);
+    // Fetch real transaction history from blockchain
+    const transactionHistory = await getRealTransactionHistoryData(address);
+    res.json(transactionHistory);
   } catch (error) {
     console.error('Error fetching transaction history:', error);
     res.status(500).json({ message: 'Internal server error' });

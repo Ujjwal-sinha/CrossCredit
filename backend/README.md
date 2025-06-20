@@ -1,156 +1,138 @@
 # CrossCredit Backend
 
-Node.js/Express backend for the CrossCredit dApp, providing APIs for credit scores, user profiles, balances, and transaction history.
+A Node.js/Express backend API for the CrossCredit DeFi platform that provides real-time blockchain data and analytics.
 
 ## Features
 
-- **Credit Score API**: Mock credit score generation based on wallet addresses
-- **User Profiles**: Comprehensive user data including balances and borrowing info
-- **Cross-Chain Balances**: DSC and native token balances on Sepolia and Fuji
-- **Transaction History**: Mock transaction data with realistic patterns
-- **Admin Panel**: Admin endpoints for managing credit scores and viewing stats
-- **Rate Limiting**: Built-in rate limiting to prevent abuse
-- **CORS Support**: Configured for frontend integration
-- **TypeScript**: Full TypeScript support with proper typing
-
-## Quick Start
-
-1. **Install dependencies:**
-   ```bash
-   cd backend
-   npm install
-   ```
-
-2. **Create environment file:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-3. **Start development server:**
-   ```bash
-   npm run dev
-   ```
-
-4. **Visit health check:**
-   ```
-   http://localhost:3001/health
-   ```
+- **Real Blockchain Integration**: Fetches live data from Sepolia and Fuji testnets using ethers.js
+- **Credit Score API**: Calculates credit scores from on-chain activity and contract data
+- **Cross-Chain Balance Tracking**: Real-time DSC and native token balances across chains
+- **Transaction History**: Fetches and processes blockchain events and transactions
+- **User Profiles**: Complete user data aggregation from multiple contracts
+- **Admin Interface**: Platform statistics and credit score management
+- **Rate Limiting**: Built-in protection against API abuse
+- **CORS Support**: Configured for React frontend integration
 
 ## API Endpoints
 
 ### Public Endpoints
 
-- `GET /health` - Health check
-- `GET /api/credit-score?address=0x...` - Get credit score for address
+- `GET /api/credit-score?address=0x...` - Get user's credit score
 - `GET /api/user-profile?address=0x...` - Get complete user profile
 - `GET /api/balances?address=0x...` - Get cross-chain balances
 - `GET /api/tx-history?address=0x...` - Get transaction history
 
-### Admin Endpoints (require API key)
+### Admin Endpoints (Require API Key)
 
-- `GET /api/admin/stats` - Platform statistics
-- `POST /api/admin/credit-score` - Update user credit score
+- `GET /api/admin/stats` - Platform statistics and health checks
+- `POST /api/admin/credit-score` - Update user credit scores
 
-## Environment Variables
+## Setup
 
-```bash
-# Server Configuration
-PORT=3001
-NODE_ENV=development
-FRONTEND_URL=http://localhost:5173
-
-# Admin Configuration
-ADMIN_API_KEY=your-secure-admin-api-key-here
-
-# Blockchain RPC URLs (optional for real on-chain data)
-SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/your-api-key
-FUJI_RPC_URL=https://api.avax-test.network/ext/bc/C/rpc
-
-# Contract Addresses (optional for real on-chain data)
-SEPOLIA_DEPOSITOR_ADDRESS=0x...
-SEPOLIA_DSC_ADDRESS=0x...
-FUJI_MAINROUTER_ADDRESS=0x...
-FUJI_MINTER_ADDRESS=0x...
-FUJI_DSC_ADDRESS=0x...
-```
-
-## Scripts
-
-- `npm run dev` - Start development server with hot reload
-- `npm run build` - Build TypeScript to JavaScript
-- `npm start` - Start production server
-- `npm run type-check` - Run TypeScript type checking
-
-## Admin API Usage
-
-Admin endpoints require an API key. Include it in headers:
-
-```bash
-curl -H "x-api-key: your-api-key" http://localhost:3001/api/admin/stats
-```
-
-Or as query parameter:
-
-```bash
-curl http://localhost:3001/api/admin/stats?apiKey=your-api-key
-```
-
-## Example Responses
-
-### Credit Score
-```json
-{
-  "address": "0x742d35Cc6634C0532925a3b8D4d9c9bC",
-  "creditScore": 750,
-  "lastUpdated": "2024-01-15T10:30:00.000Z",
-  "factors": {
-    "onChainActivity": 85,
-    "defiParticipation": 72,
-    "transactionHistory": 90,
-    "socialScore": 65
-  }
-}
-```
-
-### User Profile
-```json
-{
-  "address": "0x742d35Cc6634C0532925a3b8D4d9c9bC",
-  "profile": {
-    "creditScore": 750,
-    "totalDeposited": "5000.00",
-    "totalBorrowed": "2500.00",
-    "healthFactor": "1.50",
-    "hasNFT": false,
-    "lastUpdated": "2024-01-15T10:30:00.000Z"
-  },
-  "balances": {
-    "sepolia": { "dsc": "100.00", "eth": "1.2345" },
-    "fuji": { "dsc": "50.00", "avax": "2.5678" }
-  }
-}
-```
-
-## Production Deployment
-
-1. Build the application:
+1. **Install Dependencies**
    ```bash
-   npm run build
+   npm install
    ```
 
-2. Set production environment variables
-
-3. Start the server:
+2. **Environment Configuration**
+   Copy `sample.env` to `.env` and configure:
    ```bash
+   cp sample.env .env
+   ```
+
+   Required configuration:
+   - `SEPOLIA_RPC_URL`: Ethereum Sepolia RPC endpoint
+   - `FUJI_RPC_URL`: Avalanche Fuji RPC endpoint
+   - Contract addresses for all deployed contracts
+   - `ADMIN_API_KEY`: Secret key for admin endpoints
+
+3. **Development**
+   ```bash
+   npm run dev
+   ```
+
+4. **Production**
+   ```bash
+   npm run build
    npm start
    ```
 
-## Future Enhancements
+## Blockchain Integration
 
-- Replace mock data with real on-chain data fetching
-- Add database integration for persistent storage
-- Implement user authentication
-- Add more sophisticated credit scoring algorithms
-- Integration with The Graph for transaction history
-- WebSocket support for real-time updates 
+### Supported Networks
+
+- **Sepolia (Ethereum Testnet)**
+  - Chain ID: 11155111
+  - Contracts: Depositor, DSC
+  - CCIP Selector: 16015286601757825753
+
+- **Fuji (Avalanche Testnet)**
+  - Chain ID: 43113
+  - Contracts: MainRouter, Minter, DSC, DeFiPassportNFT
+  - CCIP Selector: 12532609583862916517
+
+### Real Data Sources
+
+1. **Contract Calls**: Direct interaction with deployed smart contracts
+2. **Event Logs**: Transaction history from blockchain events
+3. **Balance Queries**: Real-time token and native balances
+4. **Credit Scores**: Both contract-stored and calculated from activity
+
+### Credit Score Calculation
+
+The system uses a multi-factor approach:
+
+1. **Contract Score** (Primary): If available from MainRouter contract
+2. **Calculated Score** (Fallback): Based on:
+   - Total deposits (up to 200 points)
+   - Health factor (up to 150 points)
+   - Transaction history (up to 150 points)
+   - Borrowing behavior (up to 100 points)
+   - Account age (up to 100 points)
+   - Base score: 300 points
+
+## Error Handling
+
+- Graceful fallbacks when blockchain calls fail
+- Comprehensive error logging
+- Default values for unavailable data
+- Health checks for RPC connections
+
+## Rate Limiting
+
+- 100 requests per 15 minutes per IP
+- Configurable via environment variables
+- Separate limits can be set for different endpoints
+
+## Admin Features
+
+Admin endpoints require the `x-api-key` header with a valid API key.
+
+### Platform Statistics
+- Blockchain connection health
+- Contract deployment status
+- RPC endpoint availability
+
+### Credit Score Management
+- View current scores
+- Request score updates (requires on-chain transaction)
+
+## Development Notes
+
+- All contract ABIs are included and maintained
+- Provider caching for efficient RPC usage
+- Parallel data fetching for performance
+- TypeScript throughout for type safety
+- Structured logging for debugging
+
+## Environment Variables
+
+See `sample.env` for complete configuration options.
+
+Key variables:
+- `PORT`: Server port (default: 3001)
+- `NODE_ENV`: Environment mode
+- `*_RPC_URL`: Blockchain RPC endpoints
+- `*_ADDRESS`: Smart contract addresses
+- `ADMIN_API_KEY`: Admin authentication
+- `FRONTEND_URL`: CORS configuration 

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { getMockCreditScore } from '../utils/creditScore';
-import { getMockBalances } from '../utils/balances';
+import { getRealCreditScoreData } from '../utils/creditScore';
+import { getRealBalances } from '../utils/balances';
+import { getRealUserProfile } from '../utils/onChain';
 
 const router = Router();
 
@@ -11,22 +12,26 @@ router.get('/', async (req: Request, res: Response) => {
   }
 
   try {
-    // Fetch user data
-    const creditScore = await getMockCreditScore(address);
-    const balances = await getMockBalances(address);
+    // Fetch real user data from blockchain
+    const [creditScoreData, balances, userProfile] = await Promise.all([
+      getRealCreditScoreData(address),
+      getRealBalances(address),
+      getRealUserProfile(address),
+    ]);
 
     res.json({
       address,
       profile: {
-        creditScore: creditScore.creditScore,
-        totalDeposited: balances.totalDepositedUSD,
-        totalBorrowed: balances.totalBorrowedUSD,
-        healthFactor: balances.healthFactor,
-        hasNFT: false, // Mock value
-        lastUpdated: new Date().toISOString(),
+        creditScore: creditScoreData.creditScore,
+        totalDeposited: userProfile.totalDeposited,
+        totalBorrowed: userProfile.totalBorrowed,
+        healthFactor: userProfile.healthFactor,
+        hasNFT: userProfile.hasNFT,
+        lastUpdated: userProfile.lastUpdated,
       },
       balances,
-      creditScore,
+      creditScore: creditScoreData,
+      onChainProfile: userProfile,
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);
