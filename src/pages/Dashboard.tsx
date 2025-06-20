@@ -75,7 +75,7 @@ const Dashboard: React.FC = () => {
               icon={TrendingUp}
               change="+8.2%"
               changeType="positive"
-            />
+            /> 
           </motion.div>
           <motion.div variants={itemVariants}>
             <StatCard
