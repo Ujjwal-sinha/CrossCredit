@@ -15,7 +15,7 @@ const Dashboard: React.FC = () => {
       opacity: 1,
       transition: {
         staggerChildren: 0.1
-      }
+      } 
     }
   };
 
