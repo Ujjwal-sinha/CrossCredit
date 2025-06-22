@@ -14,59 +14,15 @@ async function main() {
   const initialMinterAddress = process.env.AMOY_INITIAL_MINTER_ADDRESS || "0x0000000000000000000000000000000000000000";
   const donId = hre.ethers.encodeBytes32String(donIdString);
 
-  console.log("Environment variables:");
-  console.log("- Router Address:", routerAddress);
-  console.log("- Functions Router Address:", functionsRouterAddress);
-  console.log("- DON ID (string):", donIdString);
-  console.log("- DON ID (bytes32):", donId);
-  console.log("- Subscription ID:", subscriptionId);
-  console.log("- Main Router Chain Selector:", mainRouterChainSelector?.toString());
-  console.log("- Initial Minter Address:", initialMinterAddress);
-
-  // Deploy DeFiPassportNFT
-  console.log("\n=== Deploying DeFiPassportNFT ===");
-  const DeFiPassportNFT = await hre.ethers.getContractFactory("DeFiPassportNFT");
-  const defiPassportNFT = await DeFiPassportNFT.deploy(
-    "DeFi Passport NFT",
-    "DPNFT",
-    "0x0000000000000000000000000000000000000000"
-  );
-  await defiPassportNFT.waitForDeployment();
-  const defiPassportNFTAddress = await defiPassportNFT.getAddress();
-  console.log("✅ DeFiPassportNFT deployed to:", defiPassportNFTAddress);
-
-  // Deploy DSC
-  console.log("\n=== Deploying DSC ===");
-  const DSC = await hre.ethers.getContractFactory("DSC");
-  const dsc = await DSC.deploy(
-    "DeFi Stablecoin",
-    "DSC",
-    "0x0000000000000000000000000000000000000000"
-  );
-  await dsc.waitForDeployment();
-  const dscAddress = await dsc.getAddress();
-  console.log("✅ DSC deployed to:", dscAddress);
-
-  // Deploy MainRouter
-  if (!routerAddress || !functionsRouterAddress || !donIdString || subscriptionId === undefined) {
-    throw new Error('AMOY_ROUTER_ADDRESS, AMOY_FUNCTIONS_ROUTER_ADDRESS, AMOY_DON_ID, and AMOY_SUBSCRIPTION_ID must be set in .env for MainRouter deployment');
+  // You must provide the MainRouter address deployed on the main chain (e.g., Fuji or Sepolia)
+  const mainRouterAddress = process.env.AMOY_MAIN_ROUTER_ADDRESS;
+  if (!mainRouterAddress) {
+    throw new Error('AMOY_MAIN_ROUTER_ADDRESS must be set in .env for cross-chain deployment');
   }
-
-  console.log("\n=== Deploying MainRouter ===");
-  const MainRouter = await hre.ethers.getContractFactory("MainRouter");
-  const mainRouter = await MainRouter.deploy(
-    routerAddress,
-    functionsRouterAddress,
-    donId,
-    subscriptionId
-  );
-  await mainRouter.waitForDeployment();
-  const mainRouterAddress = await mainRouter.getAddress();
-  console.log("✅ MainRouter deployed to:", mainRouterAddress);
 
   // Deploy Minter
   if (!routerAddress || mainRouterChainSelector === undefined || !mainRouterAddress) {
-    throw new Error('AMOY_ROUTER_ADDRESS, AMOY_MAIN_ROUTER_CHAIN_SELECTOR, and MainRouter address must be available for Minter deployment');
+    throw new Error('AMOY_ROUTER_ADDRESS, AMOY_MAIN_ROUTER_CHAIN_SELECTOR, and AMOY_MAIN_ROUTER_ADDRESS must be available for Minter deployment');
   }
 
   console.log("\n=== Deploying Minter ===");
@@ -94,35 +50,9 @@ async function main() {
   const depositorAddress = await depositor.getAddress();
   console.log("✅ Depositor deployed to:", depositorAddress);
 
-  // Now configure the contracts
-  console.log("\n=== Configuring Contracts ===");
-
-  try {
-    // Set MainRouter address in DeFiPassportNFT (if this function exists)
-    console.log("Setting MainRouter address in DeFiPassportNFT...");
-    const setMainRouterTx = await defiPassportNFT.setMainRouter(mainRouterAddress);
-    await setMainRouterTx.wait();
-    console.log("✅ MainRouter address set in DeFiPassportNFT");
-  } catch (error) {
-    console.log("⚠️  Could not set MainRouter in DeFiPassportNFT:", error.message);
-  }
-
-  try {
-    // Add Minter to DSC (if this function exists)
-    console.log("Adding Minter to DSC...");
-    const addMinterTx = await dsc.addMinter(minterAddress);
-    await addMinterTx.wait();
-    console.log("✅ Minter added to DSC");
-  } catch (error) {
-    console.log("⚠️  Could not add Minter to DSC:", error.message);
-  }
-
   // Summary of deployed contracts
   console.log("\n=== 🎉 Deployment Summary ===");
   console.log("Network:", hre.network.name);
-  console.log("DeFiPassportNFT:", defiPassportNFTAddress);
-  console.log("DSC:", dscAddress);
-  console.log("MainRouter:", mainRouterAddress);
   console.log("Minter:", minterAddress);
   console.log("Depositor:", depositorAddress);
 
@@ -131,9 +61,6 @@ async function main() {
     network: hre.network.name,
     timestamp: new Date().toISOString(),
     contracts: {
-      DeFiPassportNFT: defiPassportNFTAddress,
-      DSC: dscAddress,
-      MainRouter: mainRouterAddress,
       Minter: minterAddress,
       Depositor: depositorAddress
     },
@@ -142,7 +69,8 @@ async function main() {
       functionsRouterAddress,
       donId: donIdString,
       subscriptionId,
-      mainRouterChainSelector: mainRouterChainSelector?.toString()
+      mainRouterChainSelector: mainRouterChainSelector?.toString(),
+      mainRouterAddress
     }
   };
 
