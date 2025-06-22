@@ -13,15 +13,10 @@ async function main() {
   const mainRouterChainSelector = process.env.SEPOLIA_MAIN_ROUTER_CHAIN_SELECTOR ? BigInt(process.env.SEPOLIA_MAIN_ROUTER_CHAIN_SELECTOR) : undefined;
   const initialMinterAddress = process.env.SEPOLIA_INITIAL_MINTER_ADDRESS || "0x0000000000000000000000000000000000000000";
   const donId = hre.ethers.encodeBytes32String(donIdString);
-
-  console.log("Environment variables:");
-  console.log("- Router Address:", routerAddress);
-  console.log("- Functions Router Address:", functionsRouterAddress);
-  console.log("- DON ID (string):", donIdString);
-  console.log("- DON ID (bytes32):", donId);
-  console.log("- Subscription ID:", subscriptionId);
-  console.log("- Main Router Chain Selector:", mainRouterChainSelector?.toString());
-  console.log("- Initial Minter Address:", initialMinterAddress);
+  const mainRouterAddress = process.env.SEPOLIA_MAIN_ROUTER_ADDRESS;
+  if (!mainRouterAddress) {
+    throw new Error('SEPOLIA_MAIN_ROUTER_ADDRESS must be set in .env for cross-chain deployment');
+  }
 
   // Deploy DeFiPassportNFT
   console.log("\n=== Deploying DeFiPassportNFT ===");
@@ -47,26 +42,9 @@ async function main() {
   const dscAddress = await dsc.getAddress();
   console.log("✅ DSC deployed to:", dscAddress);
 
-  // Deploy MainRouter
-  if (!routerAddress || !functionsRouterAddress || !donIdString || subscriptionId === undefined) {
-    throw new Error('SEPOLIA_ROUTER_ADDRESS, SEPOLIA_FUNCTIONS_ROUTER_ADDRESS, SEPOLIA_DON_ID, and SEPOLIA_SUBSCRIPTION_ID must be set in .env for MainRouter deployment');
-  }
-
-  console.log("\n=== Deploying MainRouter ===");
-  const MainRouter = await hre.ethers.getContractFactory("MainRouter");
-  const mainRouter = await MainRouter.deploy(
-    routerAddress,
-    functionsRouterAddress,
-    donId,
-    subscriptionId
-  );
-  await mainRouter.waitForDeployment();
-  const mainRouterAddress = await mainRouter.getAddress();
-  console.log("✅ MainRouter deployed to:", mainRouterAddress);
-
   // Deploy Minter
   if (!routerAddress || mainRouterChainSelector === undefined || !mainRouterAddress) {
-    throw new Error('SEPOLIA_ROUTER_ADDRESS, SEPOLIA_MAIN_ROUTER_CHAIN_SELECTOR, and MainRouter address must be available for Minter deployment');
+    throw new Error('SEPOLIA_ROUTER_ADDRESS, SEPOLIA_MAIN_ROUTER_CHAIN_SELECTOR, and SEPOLIA_MAIN_ROUTER_ADDRESS must be available for Minter deployment');
   }
 
   console.log("\n=== Deploying Minter ===");
@@ -94,19 +72,8 @@ async function main() {
   const depositorAddress = await depositor.getAddress();
   console.log("✅ Depositor deployed to:", depositorAddress);
 
-  // Now configure the contracts
+  // Configure contracts
   console.log("\n=== Configuring Contracts ===");
-
-  try {
-    // Set MainRouter address in DeFiPassportNFT (if this function exists)
-    console.log("Setting MainRouter address in DeFiPassportNFT...");
-    const setMainRouterTx = await defiPassportNFT.setMainRouter(mainRouterAddress);
-    await setMainRouterTx.wait();
-    console.log("✅ MainRouter address set in DeFiPassportNFT");
-  } catch (error) {
-    console.log("⚠️  Could not set MainRouter in DeFiPassportNFT:", error.message);
-  }
-
   try {
     // Add Minter to DSC (if this function exists)
     console.log("Adding Minter to DSC...");
@@ -114,7 +81,7 @@ async function main() {
     await addMinterTx.wait();
     console.log("✅ Minter added to DSC");
   } catch (error) {
-    console.log("⚠️  Could not add Minter to DSC:", error.message);
+    console.log("⚠️ Could not add Minter to DSC:", error.message);
   }
 
   // Summary of deployed contracts
@@ -122,7 +89,6 @@ async function main() {
   console.log("Network:", hre.network.name);
   console.log("DeFiPassportNFT:", defiPassportNFTAddress);
   console.log("DSC:", dscAddress);
-  console.log("MainRouter:", mainRouterAddress);
   console.log("Minter:", minterAddress);
   console.log("Depositor:", depositorAddress);
 
@@ -133,7 +99,6 @@ async function main() {
     contracts: {
       DeFiPassportNFT: defiPassportNFTAddress,
       DSC: dscAddress,
-      MainRouter: mainRouterAddress,
       Minter: minterAddress,
       Depositor: depositorAddress
     },
@@ -142,7 +107,8 @@ async function main() {
       functionsRouterAddress,
       donId: donIdString,
       subscriptionId,
-      mainRouterChainSelector: mainRouterChainSelector?.toString()
+      mainRouterChainSelector: mainRouterChainSelector?.toString(),
+      mainRouterAddress
     }
   };
 
