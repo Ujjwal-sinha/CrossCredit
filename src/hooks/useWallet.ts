@@ -65,37 +65,17 @@ export const useWallet = () => {
       return;
     }
 
-    if (window.ethereum.selectedAddress) {
-      // Already connected, just update state
-      updateState({
-        isConnected: true,
-        address: window.ethereum.selectedAddress,
-        chainId: window.ethereum.chainId || null,
-        error: null
-      });
-      return;
-    }
-
     updateState({ isConnecting: true, error: null });
 
     try {
-      // Fast check for existing permissions
-      const permissions = await window.ethereum.request({
-        method: 'wallet_getPermissions'
-      }).catch(() => []);
-
-      // If already have permissions, use eth_accounts (faster) instead of eth_requestAccounts
-      const method = permissions.length > 0 ? 'eth_accounts' : 'eth_requestAccounts';
-      
-      const accounts = await window.ethereum.request({ method });
+      // Always prompt MetaMask when user clicks connect
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
 
       if (!accounts || accounts.length === 0) {
         throw new Error('No accounts available');
       }
 
       const address = accounts[0];
-      
-      // Get balance immediately after connection
       let balance = null;
       try {
         balance = await window.ethereum.request({
@@ -107,7 +87,6 @@ export const useWallet = () => {
         console.error('Error fetching initial balance:', err);
       }
 
-      // Update state with all info including balance
       updateState({
         isConnected: true,
         address,
@@ -116,7 +95,6 @@ export const useWallet = () => {
         error: null,
         isConnecting: false
       });
-
     } catch (error: any) {
       console.error('Wallet connection error:', error);
       updateState({
