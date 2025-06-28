@@ -1,25 +1,116 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, Info } from 'lucide-react';
 import GradientButton from '../components/UI/GradientButton';
+import { useContract } from '../utils/useContract';
+import { ethers } from 'ethers';
+import { useWallet } from '../hooks/useWallet';
+import { getContractAddress, getNetworkByChainId } from '../utils/addresses';
 
 const Deposit: React.FC = () => {
   const [selectedChain, setSelectedChain] = useState('arbitrum');
   const [selectedToken, setSelectedToken] = useState('eth');
   const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [walletBalance, setWalletBalance] = useState<string>('0');
+  const { address, isConnected, chainId } = useWallet();
+  const network = getNetworkByChainId(chainId as any);
+  const depositor = useContract('Depositor');
 
-  const chains = [
-    { id: 'arbitrum', name: 'Arbitrum', logo: '🔺' },
-    { id: 'ethereum', name: 'Ethereum', logo: '🔹' },
-    { id: 'polygon', name: 'Polygon', logo: '🟣' },
-  ];
+  // Only allow native token and WETH (ERC20) for Sepolia
+  const TOKEN_ADDRESSES: any = {
+    fuji: {
+      eth: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+    },
+    sepolia: {
+      eth: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // native ETH for native transfers
+      weth: '0xb16F35c0Ae2912430DAc15764477E179D9B9EbEa', // actual WETH ERC-20 token
+    },
+    amoy: {
+      eth: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+    },
+  };
 
   const tokens = [
-    { id: 'eth', name: 'Ethereum', symbol: 'ETH', balance: '2.5', price: '$2,350' },
-    { id: 'usdc', name: 'USD Coin', symbol: 'USDC', balance: '1,500', price: '$1.00' },
-    { id: 'wbtc', name: 'Wrapped Bitcoin', symbol: 'WBTC', balance: '0.1', price: '$43,200' },
+    { id: 'eth', name: 'Ethereum', symbol: 'ETH', price: '$2,350' },
+    { id: 'weth', name: 'Wrapped Ether', symbol: 'WETH', price: '$2,350' },
   ];
 
   const selectedTokenData = tokens.find(t => t.id === selectedToken);
+
+  // Add testnet chain options (restore if missing)
+  const chains = [
+    { id: 'arbitrum', name: 'Arbitrum', logo: '🔺', testnet: 'Arbitrum Sepolia' },
+    { id: 'ethereum', name: 'Ethereum', logo: '🔹', testnet: 'Ethereum Sepolia' },
+    { id: 'polygon', name: 'Polygon', logo: '🟣', testnet: 'Polygon Amoy' },
+    { id: 'avalanche', name: 'Avalanche', logo: '🟠', testnet: 'Avalanche Fuji' },
+  ];
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!window.ethereum || !address) return;
+      try {
+        if (selectedToken === 'eth') {
+          const balance = await window.ethereum.request({
+            method: 'eth_getBalance',
+            params: [address, 'latest'],
+          });
+          setWalletBalance((parseInt(balance, 16) / 1e18).toFixed(4));
+        } else if (selectedToken === 'weth') {
+          const tokenAddress = network ? TOKEN_ADDRESSES[network]?.[selectedToken] : null;
+          if (tokenAddress) {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const erc20 = new ethers.Contract(tokenAddress, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], provider);
+            const [bal, decimals] = await Promise.all([
+              erc20.balanceOf(address),
+              erc20.decimals()
+            ]);
+            setWalletBalance((Number(bal) / 10 ** Number(decimals)).toFixed(4));
+          } else {
+            setWalletBalance('0');
+          }
+        } else {
+          setWalletBalance('0');
+        }
+      } catch {
+        setWalletBalance('0');
+      }
+    };
+    fetchBalance();
+  }, [address, selectedToken, network]);
+
+  const handleDeposit = async () => {
+    if (!depositor || !isConnected || !address || !amount || !network || !window.ethereum) return;
+    setLoading(true);
+    setTxHash(null);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const depositorWithSigner = depositor.connect(signer);
+      const tokenAddress = TOKEN_ADDRESSES[network][selectedToken];
+      if (selectedToken === 'weth') {
+        const erc20 = new ethers.Contract(tokenAddress, ["function approve(address,uint256) public returns (bool)", "function allowance(address,address) public view returns (uint256)"], signer);
+        const allowance = await erc20.allowance(address, depositorWithSigner.target);
+        const parsedAmount = ethers.parseUnits(amount, 18);
+        if (allowance < parsedAmount) {
+          const approveTx = await erc20.approve(depositorWithSigner.target, parsedAmount);
+          await approveTx.wait();
+        }
+        const tx = await (depositorWithSigner as any).depositToken(tokenAddress, parsedAmount);
+        await tx.wait();
+        setTxHash(tx.hash);
+      } else {
+        // Native token (ETH/AVAX/MATIC): send value
+        const tx = await (depositorWithSigner as any).depositToken(tokenAddress, ethers.parseUnits(amount, 18), { value: ethers.parseUnits(amount, 18) });
+        await tx.wait();
+        setTxHash(tx.hash);
+      }
+    } catch (err) {
+      alert('Deposit failed: ' + (err as any)?.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
@@ -48,6 +139,7 @@ const Deposit: React.FC = () => {
                 >
                   <div className="text-2xl mb-1">{chain.logo}</div>
                   <div className="text-sm font-medium">{chain.name}</div>
+                  <div className="text-xs text-cyber-400 mt-1">{chain.testnet}</div>
                 </button>
               ))}
             </div>
@@ -81,7 +173,7 @@ const Deposit: React.FC = () => {
                 Amount
               </label>
               <span className="text-sm text-gray-400">
-                Balance: {selectedTokenData?.balance} {selectedTokenData?.symbol}
+                Balance: {walletBalance} {selectedTokenData?.symbol}
               </span>
             </div>
             <div className="relative">
@@ -94,7 +186,7 @@ const Deposit: React.FC = () => {
               />
               <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
                 <button
-                  onClick={() => selectedTokenData && setAmount(selectedTokenData.balance)}
+                  onClick={() => setAmount(walletBalance)}
                   className="text-primary-400 hover:text-primary-300 text-sm font-medium"
                 >
                   MAX
@@ -148,10 +240,16 @@ const Deposit: React.FC = () => {
           <GradientButton
             size="lg"
             className="w-full"
-            disabled={!amount || parseFloat(amount) <= 0}
+            disabled={!amount || parseFloat(amount) <= 0 || loading || !isConnected}
+            onClick={handleDeposit}
           >
-            Deposit {selectedTokenData?.symbol}
+            {loading ? 'Depositing...' : `Deposit ${selectedTokenData?.symbol}`}
           </GradientButton>
+          {txHash && (
+            <div className="mt-4 text-green-400 text-center">
+              Deposit successful! Tx: <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="underline">{txHash.slice(0, 10)}...</a>
+            </div>
+          )}
         </div>
       </div>
     </div>
