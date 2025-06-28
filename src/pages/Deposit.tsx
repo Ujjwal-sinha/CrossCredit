@@ -218,10 +218,6 @@ const Deposit: React.FC = () => {
                 <span className="text-gray-400">Amount</span>
                 <span className="text-white">{amount || '0'} {selectedTokenData?.symbol}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Est. Gas Fee</span>
-                <span className="text-white">~$12</span>
-              </div>
             </div>
           </div>
 
