@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Info } from 'lucide-react';
+import { ChevronDown, Info, ShieldCheck, TrendingUp, Sparkles } from 'lucide-react';
 import GradientButton from '../components/UI/GradientButton';
 import { useContract } from '../utils/useContract';
 import { ethers } from 'ethers';
@@ -165,14 +165,48 @@ const Deposit: React.FC = () => {
 };
 
 
+  // New: Example tips and recent activity (mocked)
+  const tips = [
+    'Tip: You can only deposit on Sepolia testnet.',
+    'Tip: Wrap ETH to WETH before depositing as collateral.',
+    'Tip: Deposited tokens are used to increase your borrowing power.'
+  ];
+  const recentActivity = [
+    { action: 'Deposited', amount: '0.5 WETH', time: '2 min ago' },
+    { action: 'Wrapped', amount: '1.0 ETH', time: '10 min ago' },
+    { action: 'Deposited', amount: '0.2 WETH', time: '1 hr ago' }
+  ];
+
   return (
-    <div className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+    <div className="pt-24 pb-12 px-4 sm:px-6 lg:px-8 relative">
+      {/* Decorative background icon */}
+      <Sparkles className="absolute left-0 top-0 w-32 h-32 text-cyber-500 opacity-10 pointer-events-none" />
       <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
+        {/* Header with icon */}
+        <div className="text-center mb-8 flex flex-col items-center">
+          <ShieldCheck className="w-10 h-10 text-cyber-400 mb-2 animate-bounce" />
           <h1 className="text-3xl font-bold text-white mb-2">Deposit Collateral</h1>
           <p className="text-gray-400">Deposit tokens to use as collateral on Sepolia</p>
         </div>
+        {/* Step indicator */}
+        <div className="flex justify-center mb-6">
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded-full bg-cyber-400" />
+            <span className="text-cyber-300 text-xs">1. Select Token</span>
+            <div className="w-2 h-0.5 bg-cyber-400 mx-1" />
+            <div className="w-3 h-3 rounded-full bg-cyber-400" />
+            <span className="text-cyber-300 text-xs">2. Enter Amount</span>
+            <div className="w-2 h-0.5 bg-cyber-400 mx-1" />
+            <div className="w-3 h-3 rounded-full bg-cyber-400" />
+            <span className="text-cyber-300 text-xs">3. Confirm</span>
+          </div>
+        </div>
         <div className="glass-morphism rounded-xl p-8">
+          {/* Info banner */}
+          <div className="flex items-center bg-cyber-500/10 border border-cyber-500/20 rounded-lg p-3 mb-6 animate-fade-in">
+            <Info className="w-5 h-5 text-cyber-400 mr-2" />
+            <span className="text-cyber-200 text-sm">Deposits are only available on Sepolia. Make sure your wallet is connected and funded.</span>
+          </div>
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-300 mb-3">Select Token</label>
             <div className="relative">
@@ -257,6 +291,25 @@ const Deposit: React.FC = () => {
               Transaction successful! Tx: <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="underline">{txHash.slice(0, 10)}...</a>
             </div>
           )}
+          {/* Tips section */}
+          <div className="bg-white/5 rounded-lg p-4 mb-6">
+            <h3 className="text-sm font-medium text-cyber-300 mb-2 flex items-center"><TrendingUp className="w-4 h-4 mr-1" />Tips</h3>
+            <ul className="list-disc list-inside text-cyber-200 text-xs space-y-1">
+              {tips.map((tip, i) => <li key={i}>{tip}</li>)}
+            </ul>
+          </div>
+          {/* Recent activity section */}
+          <div className="bg-white/5 rounded-lg p-4 mb-2">
+            <h3 className="text-sm font-medium text-cyber-300 mb-2 flex items-center"><Sparkles className="w-4 h-4 mr-1" />Recent Activity</h3>
+            <ul className="text-cyber-200 text-xs space-y-1">
+              {recentActivity.map((item, i) => (
+                <li key={i} className="flex justify-between">
+                  <span>{item.action} <span className="font-semibold text-cyber-400">{item.amount}</span></span>
+                  <span className="text-gray-400">{item.time}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
     </div>

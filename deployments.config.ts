@@ -1,0 +1,52 @@
+// deployments.config.ts
+
+export const deployments = {
+  fuji: {
+    contracts: {
+      DeFiPassportNFT: "0xFfE1F8Cc3f2bc94570d6EfF200d6CFE9B48Db1AF",
+      DSC: "0xa0B9eb9C427533bF330b0AA1F91C7d2Da2C3217a",
+      MainRouter: "0xc702D371C39c457cFE8230d035fB3611044Fe01d",
+      Minter: "0xBe6986796738D5E901AF145649Df92A9Bba3e2E9",
+      Depositor: "0x5170Ef6BfEF4708D8c505a97500b4de4927E1159",
+    },
+    environment: {
+      routerAddress: "0xF694E193200268f9a4868e4Aa017A0118C9a8177",
+      functionsRouterAddress: "0xA9d587a00A31A52Ed70D6026794a8FC5E2F5dCb0",
+      donId: "fun-avalanche-fuji-1",
+      subscriptionId: "15620",
+      mainRouterChainSelector: "14767482510784806043",
+    },
+  },
+  sepolia: {
+    contracts: {
+      DeFiPassportNFT: "0xf0b3c9c44a3bfB3a2381F1A59E07472dD13Aea38",
+      DSC: "0x0c03Caa2227E2d3CCA1a82f4544b79A5527065a1",
+      Minter: "0x20E03ae3438f9902d88226E4742a8b5774BE2925",
+      Depositor: "0x7842D25216Ec9D0606829F2b0b995b5505e7aFDA",
+    },
+    environment: {
+      routerAddress: "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+      functionsRouterAddress: "0xb83E47C2bC239B3bf370bc41e1459A34b41238D0",
+      donId: "fun-ethereum-sepolia-1",
+      subscriptionId: "5086",
+      mainRouterChainSelector: "16015286601757825753",
+      mainRouterAddress: "0xc702D371C39c457cFE8230d035fB3611044Fe01d",
+    },
+  },
+  amoy: {
+    contracts: {
+      Minter: "0x94d703B9f93a443D978DC3fA5018A54B95912e2B",
+      Depositor: "0x328a3Abc8D777586600862E22Fd1D1bd67cC6a85",
+      DeFiPassportNFT: "0xedC7e7A636965B3ac1994b1AE34666a13A3790da",
+      DSC: "0x096abaD4386C021E956b1515b7e12F9Fc7826737",
+    },
+    environment: {
+      routerAddress: "0x9C32fCB86BF0f4a1A8921a9Fe46de3198bb884B2",
+      functionsRouterAddress: "0xC22a79eBA640940ABB6dF0f7982cc119578E11De",
+      donId: "fun-polygon-amoy-1",
+      subscriptionId: "454",
+      mainRouterChainSelector: "16281711391670634445",
+      mainRouterAddress: "0xc702D371C39c457cFE8230d035fB3611044Fe01d",
+    },
+  },
+};
