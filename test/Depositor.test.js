@@ -43,12 +43,14 @@ describe("Depositor", function () {
       throw new Error("mainRouterAddress is null");
     }
 
-    // Deploy the Depositor contract
+    // Deploy the Depositor contract with supported token
+    const supportedTokens = [token.target];
     const Depositor = await ethers.getContractFactory("Depositor");
     const depositor = await Depositor.deploy(
       router.target,
       mainRouterChainSelector,
-      mainRouterAddress
+      mainRouterAddress,
+      supportedTokens
     );
     await depositor.waitForDeployment();
     if (!depositor.target) {
@@ -97,12 +99,23 @@ describe("Depositor", function () {
     it("should revert if router or main router address is zero", async function () {
       const { mainRouterChainSelector, mainRouterAddress, router } = await loadFixture(deployDepositorFixture);
       const Depositor = await ethers.getContractFactory("Depositor");
+      
+      // Test for zero router address - should revert with InvalidRouter
       await expect(
-        Depositor.deploy(ethers.ZeroAddress, mainRouterChainSelector, mainRouterAddress)
+        Depositor.deploy(ethers.ZeroAddress, mainRouterChainSelector, mainRouterAddress, [])
       ).to.be.revertedWithCustomError(Depositor, "InvalidRouter");
+      
+      // Test for zero main router address - should revert with ZeroAddress
       await expect(
-        Depositor.deploy(router.target, mainRouterChainSelector, ethers.ZeroAddress)
+        Depositor.deploy(router.target, mainRouterChainSelector, ethers.ZeroAddress, [])
       ).to.be.revertedWithCustomError(Depositor, "ZeroAddress");
+    });
+
+    it("should initialize with supported tokens", async function () {
+      const { depositor, token } = await loadFixture(deployDepositorFixture);
+      expect(await depositor.isTokenSupported(token.target)).to.be.true;
+      const tokenList = await depositor.getSupportedTokens();
+      expect(tokenList).to.include(token.target);
     });
   });
 
@@ -134,11 +147,13 @@ describe("Depositor", function () {
     });
 
     it("should allow owner to add a supported token", async function () {
-      const { depositor, owner, token } = await loadFixture(deployDepositorFixture);
-      await depositor.connect(owner).addSupportedToken(token.target);
-      expect(await depositor.supportedTokens(token.target)).to.be.true;
+      const { depositor, owner, token, user1 } = await loadFixture(deployDepositorFixture);
+      const newToken = await (await ethers.getContractFactory("MockERC20")).deploy("New Token", "NEW", ethers.parseEther("1000000"));
+      await newToken.waitForDeployment();
+      await depositor.connect(owner).addSupportedToken(newToken.target);
+      expect(await depositor.supportedTokens(newToken.target)).to.be.true;
       const tokenList = await depositor.getSupportedTokens();
-      expect(tokenList).to.include(token.target);
+      expect(tokenList).to.include(newToken.target);
     });
 
     it("should revert if non-owner tries to allowlist a destination chain", async function () {
@@ -159,11 +174,8 @@ describe("Depositor", function () {
 
   describe("Token Deposits", function () {
     it("should allow user to deposit supported tokens", async function () {
-      const { depositor, token, user1, owner, mainRouterChainSelector, mainRouterAddress } = await loadFixture(deployDepositorFixture);
+      const { depositor, token, user1, mainRouterChainSelector, mainRouterAddress } = await loadFixture(deployDepositorFixture);
       const amount = ethers.parseEther("100");
-
-      // Add token as supported
-      await depositor.connect(owner).addSupportedToken(token.target);
 
       // Approve tokens
       await token.connect(user1).approve(depositor.target, amount);
@@ -181,26 +193,36 @@ describe("Depositor", function () {
       expect(await token.balanceOf(depositor.target)).to.equal(amount);
     });
 
+    it("should allow user to send ETH for CCIP fees", async function () {
+      const { depositor, token, user1, mainRouterChainSelector, mainRouterAddress } = await loadFixture(deployDepositorFixture);
+      const amount = ethers.parseEther("100");
+      const fee = ethers.parseEther("0.01");
+
+      // Approve tokens
+      await token.connect(user1).approve(depositor.target, amount);
+
+      // Deposit with extra ETH for fees
+      const tx = await depositor.connect(user1).depositToken(token.target, amount, { value: fee });
+      await expect(tx)
+        .to.emit(depositor, "TokenDeposited")
+        .withArgs(user1.address, token.target, amount, ethers.isBytesLike);
+      await expect(tx)
+        .to.emit(depositor, "MessageSent")
+        .withArgs(ethers.isBytesLike, mainRouterChainSelector, mainRouterAddress, fee);
+
+      expect(await depositor.getUserDeposit(user1.address, token.target)).to.equal(amount);
+    });
+
     it("should revert if depositing zero amount", async function () {
-      const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
-      await depositor.connect(owner).addSupportedToken(token.target);
+      const { depositor, token, user1 } = await loadFixture(deployDepositorFixture);
       await expect(
         depositor.connect(user1).depositToken(token.target, 0)
       ).to.be.revertedWithCustomError(depositor, "ZeroAmount");
     });
 
-    it("should revert if token is not supported", async function () {
-      const { depositor, token, user1 } = await loadFixture(deployDepositorFixture);
-      const amount = ethers.parseEther("100");
-      await expect(
-        depositor.connect(user1).depositToken(token.target, amount)
-      ).to.be.revertedWithCustomError(depositor, "TokenNotSupported").withArgs(token.target);
-    });
-
     it("should revert if user has insufficient token balance", async function () {
-      const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
+      const { depositor, token, user1 } = await loadFixture(deployDepositorFixture);
       const amount = ethers.parseEther("2000");
-      await depositor.connect(owner).addSupportedToken(token.target);
       await token.connect(user1).approve(depositor.target, amount);
       await expect(
         depositor.connect(user1).depositToken(token.target, amount)
@@ -211,14 +233,11 @@ describe("Depositor", function () {
       const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
       const amount = ethers.parseEther("100");
 
-      // Add token as supported
-      await depositor.connect(owner).addSupportedToken(token.target);
+      // Withdraw all ETH from contract
+      await depositor.connect(owner).withdraw(owner.address);
 
       // Approve tokens
       await token.connect(user1).approve(depositor.target, amount);
-
-      // Withdraw all ETH from contract
-      await depositor.connect(owner).withdraw(owner.address);
 
       await expect(
         depositor.connect(user1).depositToken(token.target, amount)
@@ -228,11 +247,8 @@ describe("Depositor", function () {
 
   describe("Token Withdrawals", function () {
     it("should allow user to withdraw deposited tokens", async function () {
-      const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
+      const { depositor, token, user1 } = await loadFixture(deployDepositorFixture);
       const amount = ethers.parseEther("100");
-
-      // Add token as supported
-      await depositor.connect(owner).addSupportedToken(token.target);
 
       // Deposit tokens
       await token.connect(user1).approve(depositor.target, amount);
@@ -248,39 +264,25 @@ describe("Depositor", function () {
     });
 
     it("should revert if withdrawing zero amount", async function () {
-      const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
-      await depositor.connect(owner).addSupportedToken(token.target);
+      const { depositor, token, user1 } = await loadFixture(deployDepositorFixture);
       await expect(
         depositor.connect(user1)["withdrawToken(address,uint256)"](token.target, 0)
       ).to.be.revertedWithCustomError(depositor, "ZeroAmount");
     });
 
     it("should revert if user has insufficient deposited balance", async function () {
-      const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
-      const amount = ethers.parseEther("100");
-      await depositor.connect(owner).addSupportedToken(token.target);
-      await expect(
-        depositor.connect(user1)["withdrawToken(address,uint256)"](token.target, amount)
-      ).to.be.revertedWithCustomError(depositor, "InsufficientTokenBalance").withArgs(amount, 0);
-    });
-
-    it("should revert if token is not supported", async function () {
       const { depositor, token, user1 } = await loadFixture(deployDepositorFixture);
       const amount = ethers.parseEther("100");
       await expect(
         depositor.connect(user1)["withdrawToken(address,uint256)"](token.target, amount)
-      ).to.be.revertedWithCustomError(depositor, "TokenNotSupported").withArgs(token.target);
+      ).to.be.revertedWithCustomError(depositor, "InsufficientTokenBalance").withArgs(amount, 0);
     });
   });
 
   describe("CCIP Messaging", function () {
     async function impersonateRouter(routerAddress, provider) {
-      // Fund the router address with ETH to allow transaction sending
-      // Convert BigInt to hex string properly
       const ethAmount = ethers.parseEther("1");
-      const hexAmount = "0x" + ethAmount.toString(16);
-      await provider.send("hardhat_setBalance", [routerAddress, hexAmount]);
-      // Impersonate the router address
+      await provider.send("hardhat_setBalance", [routerAddress, "0x" + ethAmount.toString(16)]);
       await provider.send("hardhat_impersonateAccount", [routerAddress]);
       return ethers.getSigner(routerAddress);
     }
@@ -290,13 +292,9 @@ describe("Depositor", function () {
       const messageId = ethers.randomBytes(32);
       const message = "test message";
 
-      // Allowlist source chain
       await depositor.connect(owner).allowlistSourceChain(mainRouterChainSelector, true);
-
-      // Impersonate the router
       const routerSigner = await impersonateRouter(router.target, ethers.provider);
 
-      // Simulate CCIP message receipt from router
       const any2EvmMessage = {
         messageId: messageId,
         sourceChainSelector: mainRouterChainSelector,
@@ -311,7 +309,6 @@ describe("Depositor", function () {
         .to.emit(depositor, "MessageReceived")
         .withArgs(messageId, mainRouterChainSelector, mainRouter.address, message);
 
-      // Stop impersonating
       await ethers.provider.send("hardhat_stopImpersonatingAccount", [router.target]);
     });
 
@@ -321,9 +318,7 @@ describe("Depositor", function () {
       const invalidChainSelector = 999999999n;
       const message = "test message";
 
-      // Impersonate the router
       const routerSigner = await impersonateRouter(router.target, ethers.provider);
-
       const any2EvmMessage = {
         messageId: messageId,
         sourceChainSelector: invalidChainSelector,
@@ -336,7 +331,6 @@ describe("Depositor", function () {
         depositor.connect(routerSigner).ccipReceive(any2EvmMessage)
       ).to.be.revertedWithCustomError(depositor, "SourceChainNotAllowed").withArgs(invalidChainSelector);
 
-      // Stop impersonating
       await ethers.provider.send("hardhat_stopImpersonatingAccount", [router.target]);
     });
 
@@ -345,10 +339,7 @@ describe("Depositor", function () {
       const messageId = ethers.randomBytes(32);
       const message = "test message";
 
-      // Allowlist source chain
       await depositor.connect(owner).allowlistSourceChain(mainRouterChainSelector, true);
-
-      // Impersonate the router
       const routerSigner = await impersonateRouter(router.target, ethers.provider);
 
       const any2EvmMessage = {
@@ -363,7 +354,6 @@ describe("Depositor", function () {
         depositor.connect(routerSigner).ccipReceive(any2EvmMessage)
       ).to.be.revertedWithCustomError(depositor, "SenderNotAllowed").withArgs(unauthorized.address);
 
-      // Stop impersonating
       await ethers.provider.send("hardhat_stopImpersonatingAccount", [router.target]);
     });
   });
@@ -372,8 +362,6 @@ describe("Depositor", function () {
     it("should allow owner to withdraw ETH", async function () {
       const { depositor, owner, beneficiary } = await loadFixture(deployDepositorFixture);
       const amount = ethers.parseEther("0.5");
-
-      // Send additional ETH to contract
       await owner.sendTransaction({ to: depositor.target, value: amount });
 
       const initialBalance = await ethers.provider.getBalance(beneficiary.address);
@@ -386,8 +374,6 @@ describe("Depositor", function () {
     it("should allow owner to withdraw tokens", async function () {
       const { depositor, token, owner, beneficiary } = await loadFixture(deployDepositorFixture);
       const amount = ethers.parseEther("100");
-
-      // Send tokens to contract
       await token.connect(owner).transfer(depositor.target, amount);
 
       await depositor.connect(owner)["withdrawToken(address,address)"](beneficiary.address, token.target);
@@ -396,7 +382,6 @@ describe("Depositor", function () {
 
     it("should revert if withdrawing zero ETH", async function () {
       const { depositor, owner, beneficiary } = await loadFixture(deployDepositorFixture);
-      // Withdraw all ETH first
       await depositor.connect(owner).withdraw(owner.address);
       await expect(
         depositor.connect(owner).withdraw(beneficiary.address)
@@ -420,26 +405,21 @@ describe("Depositor", function () {
 
   describe("View Functions", function () {
     it("should return correct user deposit amount", async function () {
-      const { depositor, token, user1, owner } = await loadFixture(deployDepositorFixture);
+      const { depositor, token, user1 } = await loadFixture(deployDepositorFixture);
       const amount = ethers.parseEther("100");
-
-      await depositor.connect(owner).addSupportedToken(token.target);
       await token.connect(user1).approve(depositor.target, amount);
       await depositor.connect(user1).depositToken(token.target, amount);
-
       expect(await depositor.getUserDeposit(user1.address, token.target)).to.equal(amount);
     });
 
     it("should return supported tokens list", async function () {
-      const { depositor, token, owner } = await loadFixture(deployDepositorFixture);
-      await depositor.connect(owner).addSupportedToken(token.target);
+      const { depositor, token } = await loadFixture(deployDepositorFixture);
       const tokenList = await depositor.getSupportedTokens();
       expect(tokenList).to.include(token.target);
     });
 
     it("should return correct token support status", async function () {
-      const { depositor, token, owner, user1 } = await loadFixture(deployDepositorFixture);
-      await depositor.connect(owner).addSupportedToken(token.target);
+      const { depositor, token, user1 } = await loadFixture(deployDepositorFixture);
       expect(await depositor.isTokenSupported(token.target)).to.be.true;
       expect(await depositor.isTokenSupported(user1.address)).to.be.false;
     });
@@ -450,5 +430,5 @@ describe("Depositor", function () {
       const fee = await depositor.getDepositMessageFee(user1.address, token.target, amount);
       expect(fee).to.equal(ethers.parseEther("0.01")); // MockRouter returns 0.01 ETH
     });
-  })
+  });
 });

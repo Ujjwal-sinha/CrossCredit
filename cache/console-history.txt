@@ -1,0 +1,8 @@
+console.log("✅ Wrapped WETH:", ethers.formatEther(bal));
+const bal = await weth.balanceOf(signer.address);
+await tx.wait();
+const tx = await weth.deposit({ value: ethers.parseEther("0.1") });
+// Wrap 0.1 ETH into WETH
+const weth = new ethers.Contract("0x097D90c9d3E0B50Ca60e1ae45F6A81010f9FB534", IWETH_ABI, signer);
+const [signer] = await ethers.getSigners();
+const IWETH_ABI = ["function deposit() payable", "function balanceOf(address) view returns (uint256)"];
