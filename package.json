@@ -13,6 +13,7 @@
   "dependencies": {
     "@chainlink/contracts": "^1.4.0",
     "@chainlink/contracts-ccip": "^1.5.0",
+    "@civic/auth-web3": "^0.6.2",
     "@openzeppelin/contracts": "^4.8.3",
     "@rainbow-me/rainbowkit": "^2.0.4",
     "@react-three/drei": "^9.96.1",

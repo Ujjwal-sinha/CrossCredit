@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { UserButton } from '@civic/auth-web3/react';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -68,7 +69,7 @@ const Header: React.FC = () => {
 
           {/* Right side controls */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* ConnectWallet removed as per request */}
+            <UserButton />
           </div>
 
           {/* Mobile menu button */}
@@ -117,7 +118,9 @@ const Header: React.FC = () => {
                     </Link>
                   </motion.div>
                 ))}
-                {/* ConnectWallet removed as per request */}
+                <div className="pt-4 border-t border-cyber-500/20 mt-4 flex items-center justify-between">
+                  <UserButton />
+                </div>
               </div>
             </motion.div>
           )}
