@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate, Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
 import { CivicAuthProvider, UserButton } from '@civic/auth-web3/react';
@@ -24,6 +24,13 @@ function AuthRedirect() {
     }
   }, [isAuthenticated, user, navigate]);
   return null;
+}
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user, isLoading } = useUser();
+  if (isLoading) return null; // or a loading spinner
+  if (!isAuthenticated || !user) return <Navigate to="/" replace />;
+  return <>{children}</>;
 }
 
 function App() {
@@ -56,12 +63,14 @@ function App() {
             <AnimatePresence mode="wait">
               <Routes>
                 <Route path="/" element={<LandingPage />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/deposit" element={<Deposit />} />
-                <Route path="/borrow" element={<Borrow />} />
-                <Route path="/passport" element={<PassportNFT />} />
-                <Route path="/repay" element={<Repay />} />
-                <Route path="/swap" element={<Swap />} />
+                <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/deposit" element={<Deposit />} />
+                  <Route path="/borrow" element={<Borrow />} />
+                  <Route path="/passport" element={<PassportNFT />} />
+                  <Route path="/repay" element={<Repay />} />
+                  <Route path="/swap" element={<Swap />} />
+                </Route>
               </Routes>
             </AnimatePresence>
           </Layout>
