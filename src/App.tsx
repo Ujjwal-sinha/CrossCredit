@@ -24,7 +24,8 @@ declare global {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, isLoading } = useUser();
-  if (isLoading) return null; // or a loading spinner
+  // Show a loading spinner or null while auth state is loading
+  if (isLoading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   if (!isAuthenticated || !user) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
