@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
-import { CivicAuthProvider } from '@civic/auth/react';
+import { CivicAuthProvider, UserButton } from '@civic/auth-web3/react';
 import { useUser } from '@civic/auth-web3/react';
 import Layout from './components/Layout/Layout';
 import LandingPage from './pages/LandingPage';
@@ -41,7 +41,7 @@ function App() {
   }, []);
 
   return (
-    <CivicAuthProvider clientId="55df4ea5-c3c5-403f-a8b8-c585d5d2206d">
+    <CivicAuthProvider clientId="035d4d41-04d7-4b2e-b1f0-87f6b78f4d27">
       <Router>
         <AuthRedirect />
         <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white overflow-x-hidden relative">
@@ -52,6 +52,7 @@ function App() {
             <div className="matrix-bg w-full h-full opacity-20"></div>
           </div>
           <Layout>
+            <UserButton />
             <AnimatePresence mode="wait">
               <Routes>
                 <Route path="/" element={<LandingPage />} />
