@@ -9,4 +9,4 @@ This folder demonstrates a minimal Civic Auth integration for hackathon proof-of
 
 ## Usage
 - Copy or reference these files in your project to quickly enable Civic Auth Web3 login.
-- See `AppDemo.tsx` for a working example.
+- 

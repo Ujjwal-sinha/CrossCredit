@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserButton } from '@civic/auth-web3/react';
+import { UserButton, useUser } from '@civic/auth-web3/react';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, signIn, signOut } = useUser();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard' },
@@ -69,7 +70,19 @@ const Header: React.FC = () => {
 
           {/* Right side controls */}
           <div className="hidden md:flex items-center space-x-4">
-            <UserButton />
+            {!user && (
+              <button onClick={signIn} className="px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer">
+                Sign into CrossCredit
+              </button>
+            )}
+            {user && (
+              <>
+                <span className="text-cyber-300 font-orbitron text-sm mr-2">{String(user.displayName || user.email || user.address)}</span>
+                <button onClick={signOut} className="px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer">
+                  Sign out
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -119,7 +132,19 @@ const Header: React.FC = () => {
                   </motion.div>
                 ))}
                 <div className="pt-4 border-t border-cyber-500/20 mt-4 flex items-center justify-between">
-                  <UserButton />
+                  {!user && (
+                    <button onClick={signIn} className="w-full px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer">
+                      Sign into CrossCredit
+                    </button>
+                  )}
+                  {user && (
+                    <>
+                      <span className="text-cyber-300 font-orbitron text-sm mr-2">{String(user.displayName || user.email || user.address)}</span>
+                      <button onClick={signOut} className="w-full px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer">
+                        Sign out
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </motion.div>
