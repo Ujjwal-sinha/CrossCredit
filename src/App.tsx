@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
 import { CivicAuthProvider, UserButton } from '@civic/auth-web3/react';
@@ -14,17 +14,6 @@ import Repay from './pages/Repay';
 import Swap from './pages/Swap';
 import CyberBackground from './components/3D/CyberBackground';
 import './App.css';
-
-function AuthRedirect() {
-  const { user, isAuthenticated } = useUser();
-  const navigate = useNavigate();
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [isAuthenticated, user, navigate]);
-  return null;
-}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, isLoading } = useUser();
@@ -50,7 +39,6 @@ function App() {
   return (
     <CivicAuthProvider clientId="035d4d41-04d7-4b2e-b1f0-87f6b78f4d27">
       <Router>
-        <AuthRedirect />
         <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white overflow-x-hidden relative">
           {/* 3D Cyber Background */}
           <CyberBackground />
