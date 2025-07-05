@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
@@ -31,8 +31,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const [authReady, setAuthReady] = useState(false);
-
   useEffect(() => {
     // Hide loading screen after app loads
     const loadingScreen = document.getElementById('loading-screen');
@@ -46,17 +44,6 @@ function App() {
     }
   }, []);
 
-  useEffect(() => {
-    // Wait for CivicAuthProvider to initialize
-    if (window.civicAuthReady) {
-      setAuthReady(true);
-    } else {
-      window.civicAuthReady = () => setAuthReady(true);
-    }
-  }, []);
-
-  if (!authReady) return null; // or a loading spinner
-
   return (
     <CivicAuthProvider clientId="035d4d41-04d7-4b2e-b1f0-87f6b78f4d27">
       <Router>
@@ -67,24 +54,22 @@ function App() {
           <div className="fixed inset-0 pointer-events-none z-0">
             <div className="matrix-bg w-full h-full opacity-20"></div>
           </div>
-          {authReady && (
-            <Layout>
-              <UserButton />
-              <AnimatePresence mode="wait">
-                <Routes>
-                  <Route path="/" element={<LandingPage />} />
-                  <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/deposit" element={<Deposit />} />
-                    <Route path="/borrow" element={<Borrow />} />
-                    <Route path="/passport" element={<PassportNFT />} />
-                    <Route path="/repay" element={<Repay />} />
-                    <Route path="/swap" element={<Swap />} />
-                  </Route>
-                </Routes>
-              </AnimatePresence>
-            </Layout>
-          )}
+          <Layout>
+            <UserButton />
+            <AnimatePresence mode="wait">
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/deposit" element={<Deposit />} />
+                  <Route path="/borrow" element={<Borrow />} />
+                  <Route path="/passport" element={<PassportNFT />} />
+                  <Route path="/repay" element={<Repay />} />
+                  <Route path="/swap" element={<Swap />} />
+                </Route>
+              </Routes>
+            </AnimatePresence>
+          </Layout>
           <Toaster 
             position="bottom-right"
             toastOptions={{
