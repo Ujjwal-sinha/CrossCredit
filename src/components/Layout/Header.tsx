@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserButton, useUser } from '@civic/auth-web3/react';
+import { useUser } from '@civic/auth-web3/react';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const location = useLocation();
   const { user, signIn, signOut } = useUser();
 
@@ -18,6 +19,24 @@ const Header: React.FC = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  // Auth button handlers with processing state
+  const handleSignIn = async () => {
+    setProcessing(true);
+    try {
+      await signIn();
+    } finally {
+      setProcessing(false);
+    }
+  };
+  const handleSignOut = async () => {
+    setProcessing(true);
+    try {
+      await signOut();
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   return (
     <motion.header
@@ -71,15 +90,23 @@ const Header: React.FC = () => {
           {/* Right side controls */}
           <div className="hidden md:flex items-center space-x-4">
             {!user && (
-              <button onClick={signIn} className="px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer">
-                Sign into CrossCredit
+              <button
+                onClick={handleSignIn}
+                className="px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer disabled:opacity-60"
+                disabled={processing}
+              >
+                {processing ? 'Processing...' : 'Sign into CrossCredit'}
               </button>
             )}
             {user && (
               <>
                 <span className="text-cyber-300 font-orbitron text-sm mr-2">{String(user.displayName || user.email || user.address)}</span>
-                <button onClick={signOut} className="px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer">
-                  Sign out
+                <button
+                  onClick={handleSignOut}
+                  className="px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer disabled:opacity-60"
+                  disabled={processing}
+                >
+                  {processing ? 'Processing...' : 'Sign out'}
                 </button>
               </>
             )}
@@ -133,15 +160,23 @@ const Header: React.FC = () => {
                 ))}
                 <div className="pt-4 border-t border-cyber-500/20 mt-4 flex items-center justify-between">
                   {!user && (
-                    <button onClick={signIn} className="w-full px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer">
-                      Sign into CrossCredit
+                    <button
+                      onClick={handleSignIn}
+                      className="w-full px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer disabled:opacity-60"
+                      disabled={processing}
+                    >
+                      {processing ? 'Processing...' : 'Sign into CrossCredit'}
                     </button>
                   )}
                   {user && (
                     <>
                       <span className="text-cyber-300 font-orbitron text-sm mr-2">{String(user.displayName || user.email || user.address)}</span>
-                      <button onClick={signOut} className="w-full px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer">
-                        Sign out
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer disabled:opacity-60"
+                        disabled={processing}
+                      >
+                        {processing ? 'Processing...' : 'Sign out'}
                       </button>
                     </>
                   )}
