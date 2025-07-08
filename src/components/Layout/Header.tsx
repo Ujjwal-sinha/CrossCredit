@@ -37,7 +37,7 @@ const Header: React.FC = () => {
     try {
       await signIn();
       console.log('Header: Sign-in successful, navigating to /dashboard');
-      navigate('/dashboard', { replace: true }); // Navigate after successful sign-in
+      navigate('/dashboard', { replace: true });
     } catch (error) {
       console.error('Header: Sign-in error:', error);
       alert('Authentication failed. Please try again.');
@@ -52,7 +52,7 @@ const Header: React.FC = () => {
     try {
       await signOut();
       console.log('Header: Sign-out successful');
-      navigate('/', { replace: true }); // Navigate to landing page after sign-out
+      navigate('/', { replace: true });
     } catch (error) {
       console.error('Header: Sign-out error:', error);
       alert('Sign-out failed. Please try again.');
@@ -71,7 +71,7 @@ const Header: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 group">
+          <Link to="/" className="flex items-center space-x-3 group" onClick={() => console.log('Header: CrossCredit logo clicked, navigating to /')}>
             <motion.div
               className="w-10 h-10 bg-gradient-cyber rounded-lg flex items-center justify-center shadow-cyber group-hover:shadow-glow-md transition-all duration-300"
               whileHover={{ rotate: 360, scale: 1.1 }}
@@ -100,7 +100,7 @@ const Header: React.FC = () => {
                   to={item.href}
                   onClick={(e) => {
                     if (processing) {
-                      e.preventDefault(); // Prevent navigation during processing
+                      e.preventDefault();
                       console.log('Header: Navigation blocked due to processing');
                     }
                   }}

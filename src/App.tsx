@@ -57,6 +57,8 @@ function ProtectedRoute({ children }: { children?: React.ReactNode }) {
 }
 
 function App() {
+  const { user, isAuthenticated } = useUser();
+
   useEffect(() => {
     // Hide loading screen after app loads
     const loadingScreen = document.getElementById('loading-screen');
@@ -66,12 +68,17 @@ function App() {
         setTimeout(() => {
           loadingScreen.remove();
         }, 500);
-      }, 1000); // Reduced to 1s for faster loading
+      }, 1000); // 1s for faster loading
     }
   }, []);
 
+  // Log app-level auth state for debugging
+  useEffect(() => {
+    console.log('App: Auth state', { user, isAuthenticated });
+  }, [user, isAuthenticated]);
+
   return (
-    <CivicAuthProvider clientId="035d4d41-04d7-4b2e-b1f0-87f6b78f4d27">
+    <CivicAuthProvider clientId="035d4d41-04d7-4b2e-b1f0-87f6b78f4d27" >
       <Router>
         <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white overflow-x-hidden relative">
           {/* 3D Cyber Background */}
