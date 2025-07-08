@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '@civic/auth-web3/react';
@@ -8,7 +8,8 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
   const location = useLocation();
-  const { user, signIn, signOut } = useUser();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, signIn, signOut } = useUser();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard' },
@@ -20,19 +21,41 @@ const Header: React.FC = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  // Monitor authentication state changes and redirect if authenticated
+  useEffect(() => {
+    console.log('Header: Auth state updated', { user, isAuthenticated, location: location.pathname });
+    if (user && isAuthenticated && location.pathname === '/') {
+      console.log('Header: User authenticated, redirecting to /dashboard');
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, isAuthenticated, location.pathname, navigate]);
+
   // Auth button handlers with processing state
   const handleSignIn = async () => {
     setProcessing(true);
+    console.time('CivicSignIn');
     try {
       await signIn();
+      console.log('Header: Sign-in successful, navigating to /dashboard');
+      navigate('/dashboard', { replace: true }); // Navigate after successful sign-in
+    } catch (error) {
+      console.error('Header: Sign-in error:', error);
+      alert('Authentication failed. Please try again.');
     } finally {
+      console.timeEnd('CivicSignIn');
       setProcessing(false);
     }
   };
+
   const handleSignOut = async () => {
     setProcessing(true);
     try {
       await signOut();
+      console.log('Header: Sign-out successful');
+      navigate('/', { replace: true }); // Navigate to landing page after sign-out
+    } catch (error) {
+      console.error('Header: Sign-out error:', error);
+      alert('Sign-out failed. Please try again.');
     } finally {
       setProcessing(false);
     }
@@ -75,10 +98,18 @@ const Header: React.FC = () => {
               >
                 <Link
                   to={item.href}
+                  onClick={(e) => {
+                    if (processing) {
+                      e.preventDefault(); // Prevent navigation during processing
+                      console.log('Header: Navigation blocked due to processing');
+                    }
+                  }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 font-orbitron ${
                     isActive(item.href)
                       ? 'bg-cyber-500/20 text-cyber-300 border border-cyber-500/50 shadow-glow-sm'
-                      : 'text-gray-300 hover:text-cyber-300 hover:bg-cyber-500/10'
+                      : `text-gray-300 hover:text-cyber-300 hover:bg-cyber-500/10 ${
+                          processing ? 'pointer-events-none opacity-50' : ''
+                        }`
                   }`}
                 >
                   {item.name}
@@ -95,18 +126,38 @@ const Header: React.FC = () => {
                 className="px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer disabled:opacity-60"
                 disabled={processing}
               >
-                {processing ? 'Processing...' : 'Sign into CrossCredit'}
+                {processing ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    </svg>
+                    Processing...
+                  </span>
+                ) : (
+                  'Sign into CrossCredit'
+                )}
               </button>
             )}
             {user && (
               <>
-                <span className="text-cyber-300 font-orbitron text-sm mr-2">{String(user.displayName || user.email || user.address)}</span>
+                <span className="text-cyber-300 font-orbitron text-sm mr-2">
+                  {String(user.displayName || user.email || user.address)}
+                </span>
                 <button
                   onClick={handleSignOut}
                   className="px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer disabled:opacity-60"
                   disabled={processing}
                 >
-                  {processing ? 'Processing...' : 'Sign out'}
+                  {processing ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      </svg>
+                      Processing...
+                    </span>
+                  ) : (
+                    'Sign out'
+                  )}
                 </button>
               </>
             )}
@@ -119,11 +170,7 @@ const Header: React.FC = () => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
-            {isMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </motion.button>
         </div>
 
@@ -147,11 +194,19 @@ const Header: React.FC = () => {
                   >
                     <Link
                       to={item.href}
-                      onClick={() => setIsMenuOpen(false)}
+                      onClick={(e) => {
+                        if (processing) {
+                          e.preventDefault();
+                          console.log('Header: Mobile navigation blocked due to processing');
+                        }
+                        setIsMenuOpen(false);
+                      }}
                       className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 font-orbitron block ${
                         isActive(item.href)
                           ? 'bg-cyber-500/20 text-cyber-300 border border-cyber-500/50'
-                          : 'text-gray-300 hover:text-cyber-300 hover:bg-cyber-500/10'
+                          : `text-gray-300 hover:text-cyber-300 hover:bg-cyber-500/10 ${
+                              processing ? 'pointer-events-none opacity-50' : ''
+                            }`
                       }`}
                     >
                       {item.name}
@@ -165,18 +220,38 @@ const Header: React.FC = () => {
                       className="w-full px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer disabled:opacity-60"
                       disabled={processing}
                     >
-                      {processing ? 'Processing...' : 'Sign into CrossCredit'}
+                      {processing ? (
+                        <span className="flex items-center">
+                          <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          </svg>
+                          Processing...
+                        </span>
+                      ) : (
+                        'Sign into CrossCredit'
+                      )}
                     </button>
                   )}
                   {user && (
                     <>
-                      <span className="text-cyber-300 font-orbitron text-sm mr-2">{String(user.displayName || user.email || user.address)}</span>
+                      <span className="text-cyber-300 font-orbitron text-sm mr-2">
+                        {String(user.displayName || user.email || user.address)}
+                      </span>
                       <button
                         onClick={handleSignOut}
                         className="w-full px-4 py-2 rounded-lg bg-cyber-500 text-black font-orbitron font-bold shadow-cyber hover:bg-cyber-400 transition-all duration-200 cursor-pointer disabled:opacity-60"
                         disabled={processing}
                       >
-                        {processing ? 'Processing...' : 'Sign out'}
+                        {processing ? (
+                          <span className="flex items-center">
+                            <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            </svg>
+                            Processing...
+                          </span>
+                        ) : (
+                          'Sign out'
+                        )}
                       </button>
                     </>
                   )}

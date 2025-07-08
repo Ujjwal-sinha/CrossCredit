@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
@@ -22,12 +22,38 @@ declare global {
   }
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children }: { children?: React.ReactNode }) {
   const { isAuthenticated, user, isLoading } = useUser();
-  // Show a loading spinner or null while auth state is loading
-  if (isLoading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  if (!isAuthenticated || !user) return <Navigate to="/" replace />;
-  return <>{children}</>;
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Delay auth check to allow state synchronization
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => {
+        console.log('ProtectedRoute: Auth check complete', { user, isAuthenticated });
+        setIsCheckingAuth(false);
+      }, 1000); // 1s delay to ensure state sync
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
+  if (isLoading || isCheckingAuth) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <svg className="animate-spin h-8 w-8 text-cyber-500 mr-2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+        </svg>
+        <span className="text-cyber-300">Checking authentication...</span>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    console.log('ProtectedRoute: Not authenticated, redirecting to /', { user, isAuthenticated });
+    return <Navigate to="/" replace />;
+  }
+
+  return children ? <>{children}</> : <Outlet />;
 }
 
 function App() {
@@ -40,7 +66,7 @@ function App() {
         setTimeout(() => {
           loadingScreen.remove();
         }, 500);
-      }, 2000);
+      }, 1000); // Reduced to 1s for faster loading
     }
   }, []);
 
@@ -59,7 +85,7 @@ function App() {
             <AnimatePresence mode="wait">
               <Routes>
                 <Route path="/" element={<LandingPage />} />
-                <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+                <Route element={<ProtectedRoute />}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/deposit" element={<Deposit />} />
                   <Route path="/borrow" element={<Borrow />} />
@@ -70,7 +96,7 @@ function App() {
               </Routes>
             </AnimatePresence>
           </Layout>
-          <Toaster 
+          <Toaster
             position="bottom-right"
             toastOptions={{
               className: 'cyber-glass text-white border border-cyber-500',
