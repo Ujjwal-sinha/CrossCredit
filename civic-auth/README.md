@@ -28,7 +28,8 @@ This repository demonstrates a minimal Civic Auth integration for hackathon proo
    npm install react react-dom react-router-dom framer-motion @civic/auth-web3 react-hot-toast
 
    Or with Yarn:bash
- ```bash
+
+     ```bash
 yarn add react react-dom react-router-dom framer-motion @civic/auth-web3 react-hot-toast
 
 Set Up Civic Auth:Obtain a clientId from Civic and update the CivicAuthProvider in App.tsx:tsx
@@ -46,7 +47,7 @@ const navigation = [
   { name: 'Deposit', href: '/deposit' },
   // Add or modify routes as needed
 ];
-
+  ```bash
 Customize Styling:The app uses Tailwind CSS classes (e.g., cyber-glass, neon-text, bg-gradient-cyber) and a custom App.css. Set up Tailwind CSS or replace with your styling solution.
 Adjust the matrix-bg and CyberBackground components to align with your app’s visual design.
 
@@ -60,10 +61,7 @@ Navigate to protected routes (/dashboard, etc.) to verify redirection for unauth
 NotesClient ID: Replace the placeholder clientId in App.tsx (035d4d41-04d7-4b2e-b1f0-87f6b78f4d27) with your actual Civic Auth client ID.
 Authentication Delay: The ProtectedRoute component uses a 1-second delay for state synchronization. Adjust the timeout in App.tsx if needed:tsx
 
-const timer = setTimeout(() => {
-  setIsCheckingAuth(false);
-}, 1000); // Adjust delay as needed
-
+ ```bash
 Error Handling: Header.tsx includes basic error handling with alerts. Enhance with custom modals or toast notifications for production.
 Civic Auth Configuration: Refer to Civic's Documentation for advanced configuration options in civic.ts.
 API Access: For xAI API integration, see xAI API Documentation.
