@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
-import { CivicAuthProvider, UserButton } from '@civic/auth-web3/react';
-import { useUser } from '@civic/auth-web3/react';
+import { CivicAuthProvider, UserButton, useUser } from '@civic/auth-web3/react';
+import { motion } from 'framer-motion'; // Added for animated loading text
 import Layout from './components/Layout/Layout';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
@@ -39,11 +39,30 @@ function ProtectedRoute({ children }: { children?: React.ReactNode }) {
 
   if (isLoading || isCheckingAuth) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <svg className="animate-spin h-8 w-8 text-cyber-500 mr-2" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-        </svg>
-        <span className="text-cyber-300">Checking authentication...</span>
+      <div className="flex items-center justify-center min-h-screen relative bg-black">
+        {/* CyberBackground for 3D loading effect */}
+        <CyberBackground />
+        {/* Matrix rain effect for consistency */}
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="matrix-bg w-full h-full opacity-20"></div>
+        </div>
+        {/* Animated overlay text */}
+        <motion.div
+          className="absolute flex items-center justify-center z-20"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <svg
+            className="animate-spin h-8 w-8 text-cyber-500 mr-2"
+            viewBox="0 0 24 24"
+          >
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+          </svg>
+          <span className="text-cyber-300 text-lg font-mono animate-pulse">
+            Checking Authentication with Civic ...
+          </span>
+        </motion.div>
       </div>
     );
   }
@@ -78,10 +97,10 @@ function App() {
   }, [user, isAuthenticated]);
 
   return (
-    <CivicAuthProvider clientId="035d4d41-04d7-4b2e-b1f0-87f6b78f4d27" >
+    <CivicAuthProvider clientId="035d4d41-04d7-4b2e-b1f0-87f6b78f4d27">
       <Router>
         <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white overflow-x-hidden relative">
-          {/* 3D Cyber Background */}
+          {/* 3D Cyber Background for main app */}
           <CyberBackground />
           {/* Matrix rain effect */}
           <div className="fixed inset-0 pointer-events-none z-0">
