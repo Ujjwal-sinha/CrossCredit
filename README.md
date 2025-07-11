@@ -1,162 +1,165 @@
 # CreditLend Passport - Cross-Chain DeFi Credit Protocol
 
-A revolutionary cross-chain DeFi lending protocol that allows users to deposit collateral on one blockchain and borrow stablecoins on another, powered by AI credit scoring and DeFi Passport NFTs.
+**CreditLend Passport** is a revolutionary decentralized finance (DeFi) lending protocol that enables users to **deposit collateral on one blockchain and borrow stablecoins on another**, leveraging AI-driven credit scoring, dynamic DeFi Passport NFTs, and secure Web3 Civic authentication.
 
 ## 🌟 Features
 
-- **Cross-Chain Lending**: Deposit tokens on one blockchain, borrow on another
-- **AI Credit Scoring**: Personalized credit scores based on DeFi activity
-- **DeFi Passport NFT**: Dynamic NFTs showcasing credit worthiness
-- **Multi-Chain Support**: Ethereum, Arbitrum, Polygon, Avalanche, Optimism
-- **Secure Messaging**: Powered by Chainlink CCIP
-- **Real-time Data**: Chainlink Price Feeds and Functions
+- **Cross-Chain Lending:** Deposit tokens on one blockchain and borrow stablecoins on another seamlessly.
+- **AI Credit Scoring:** Personalized credit scores generated from your DeFi activity using advanced AI models.
+- **DeFi Passport NFT:** Dynamic NFTs that represent your creditworthiness and DeFi identity.
+- **Multi-Chain Support:** Compatible with Ethereum, Arbitrum, Polygon, Avalanche, and Optimism.
+- **Secure Messaging:** Powered by Chainlink CCIP for reliable and secure cross-chain communication.
+- **Real-time Data:** Utilizes Chainlink Price Feeds and Functions for accurate and up-to-date information.
+- **Web3 Authentication:** Integration with Civic’s `@civic/auth-web3` for secure and seamless user sign-in/sign-out.
+- **Protected Routes:** Access control ensures only authenticated users can access sensitive pages.
+- **Responsive Design:** Mobile-friendly UI with smooth Framer Motion animations.
+- **Dynamic Navigation:** Multi-page navigation with active state highlighting for routes like `/dashboard`, `/deposit`, `/borrow`, `/passport`, and `/swap`.
+- **3D Background & Effects:** Futuristic UI enhanced by a `CyberBackground` component and matrix rain visual effects.
 
 ## 🏗️ Architecture
 
 ### Smart Contracts
 
-- **MainRouter.sol** (Avalanche): Central coordinator for all operations
-- **Depositor.sol** (Source chains): Handles token deposits
-- **Minter.sol** (Destination chains): Manages DSC token minting/burning
-- **DSC.sol**: Cross-chain stablecoin for borrowing
-- **DeFiPassportNFT.sol**: Dynamic NFT representing user credit profile
+- **MainRouter.sol** (Avalanche): Central coordinator managing all cross-chain operations.
+- **Depositor.sol** (Source Chains): Handles collateral deposits.
+- **Minter.sol** (Destination Chains): Manages minting and burning of DSC stablecoins.
+- **DSC.sol:** Cross-chain stablecoin used for borrowing.
+- **DeFiPassportNFT.sol:** Dynamic NFT representing user credit profiles.
 
 ### Frontend
 
-- **React + TypeScript**: Modern web application
-- **Tailwind CSS**: Beautiful, responsive design
-- **Wagmi + RainbowKit**: Web3 wallet integration
-- **React Router**: Multi-page navigation
+- Built with **React + TypeScript** for a modern, type-safe web app.
+- Styled using **Tailwind CSS** with cyberpunk-themed classes (`cyber-glass`, `neon-text`).
+- Wallet integration via **Wagmi + RainbowKit**.
+- Navigation handled by **React Router** with protected routes.
+- Authentication powered by **Civic Auth** (`@civic/auth-web3`), featuring `SignInButton`, `SignOutButton`, and `UserButton`.
+- UI animations with **Framer Motion** for smooth transitions.
+- 3D visuals implemented using the `CyberBackground` component with particles, grids, and glowing effects.
+- Loading states include 3D loading screens, spinners, and animated text to prevent race conditions.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- npm or yarn
-- MetaMask or compatible wallet
+- npm or yarn package manager
+- MetaMask or compatible Web3 wallet
+- Civic Auth client ID for authentication
 
 ### Installation
 
 1. Clone the repository:
-```bash
 git clone <repository-url>
 cd creditlend-passport
-```
 
+text
 2. Install dependencies:
-```bash
 npm install
-```
 
-3. Start the development server:
-```bash
-npm run dev
-```
+or
+yarn add react react-dom react-router-dom framer-motion @civic/auth-web3 react-hot-toast @react-three/fiber @react-three/drei three wagmi @rainbow-me/rainbowkit
 
-4. Open your browser and navigate to `http://localhost:5173`
-
-## 🔧 Smart Contract Deployment
-
-### Testnet Deployment
-
-1. **Deploy MainRouter** on Avalanche Fuji
-2. **Deploy Depositor** on Arbitrum Goerli, Ethereum Goerli
-3. **Deploy Minter** on Polygon Mumbai, Optimism Goerli
-4. **Configure CCIP** connections between contracts
-5. **Set up Chainlink Functions** for credit scoring
-
-### Configuration
-
-Update contract addresses in the frontend configuration:
-
-```typescript
-// src/config/contracts.ts
+text
+3. Configure Civic Auth:
+- Obtain a clientId from Civic.
+- Update `CivicAuthProvider` in `src/App.tsx`:
+  ```
+  <CivicAuthProvider clientId="your-civic-client-id">
+  ```
+- Adjust settings in `src/civic.ts` (endpoint, chain).
+4. Update contract addresses in `src/config/contracts.ts`:
 export const CONTRACTS = {
-  MAIN_ROUTER: "0x...", // Avalanche Fuji
-  DEPOSITORS: {
-    arbitrum: "0x...",
-    ethereum: "0x..."
-  },
-  MINTERS: {
-    polygon: "0x...",
-    optimism: "0x..."
-  }
+MAIN_ROUTER: "0x...", // Avalanche Fuji
+DEPOSITORS: {
+arbitrum: "0x...",
+ethereum: "0x..."
+},
+MINTERS: {
+polygon: "0x...",
+optimism: "0x..."
+}
 };
-```
 
-## 📱 Usage
+text
+5. Start the development server:
+npm run dev
+
+text
+6. Open your browser at [http://localhost:5173](http://localhost:5173).
+
+## 🛠️ Deployment & Configuration
+
+- Deploy `MainRouter` on Avalanche Fuji.
+- Deploy `Depositor` on Arbitrum Goerli and Ethereum Goerli.
+- Deploy `Minter` on Polygon Mumbai and Optimism Goerli.
+- Configure Chainlink CCIP for cross-chain messaging.
+- Set up Chainlink Functions for AI-powered credit scoring.
+- Verify all contract addresses and Civic Auth settings for proper function.
+
+## 🎯 Usage
 
 ### For Users
 
-1. **Connect Wallet**: Connect your Web3 wallet
-2. **Deposit Collateral**: Choose a chain and deposit supported tokens
-3. **Get Credit Score**: AI analyzes your DeFi activity
-4. **Borrow DSC**: Borrow stablecoins on your preferred chain
-5. **Mint NFT Passport**: Create your DeFi identity NFT
-6. **Cross-Chain Swap**: Move DSC between chains
-7. **Repay Loans**: Maintain healthy positions
+- Connect your wallet (MetaMask or compatible).
+- Sign in using Civic Web3 authentication.
+- Deposit collateral on your chosen source chain.
+- Receive an AI-generated credit score based on your DeFi history.
+- Borrow DSC stablecoins on your preferred destination chain.
+- Mint your DeFi Passport NFT to showcase your credit profile.
+- Perform cross-chain swaps of DSC tokens.
+- Repay loans to maintain healthy positions and avoid liquidation.
+- Sign out securely when done.
 
 ### For Developers
 
-1. **Smart Contract Integration**: Use our SDK to integrate with other protocols
-2. **Credit Score API**: Access credit scoring for your applications
-3. **NFT Metadata**: Build on top of DeFi Passport data
+- Integrate smart contracts using the provided SDK.
+- Access AI credit score APIs for your applications.
+- Build on DeFi Passport NFT metadata.
+- Customize frontend components (`App.tsx`, `Header.tsx`, `civic.ts`).
+- Update navigation routes as needed.
 
 ## 🔗 Supported Networks
 
-### Mainnet
-- Ethereum
-- Arbitrum
-- Polygon
-- Avalanche
-- Optimism
+| Network Type | Networks                      |
+|--------------|-------------------------------|
+| Mainnet      | Ethereum, Arbitrum, Polygon, Avalanche, Optimism |
+| Testnet      | Ethereum Goerli, Arbitrum Goerli, Polygon Mumbai, Avalanche Fuji, Optimism Goerli |
 
-### Testnet
-- Ethereum Goerli
-- Arbitrum Goerli
-- Polygon Mumbai
-- Avalanche Fuji
-- Optimism Goerli
+## 🔒 Security
 
-## 🛡️ Security
+- All smart contracts are **audited** for security.
+- Cross-chain messaging secured by **Chainlink CCIP**.
+- Real-time **health factor monitoring** to prevent over-borrowing.
+- Automated **liquidation protection** safeguards user positions.
+- Robust Web3 authentication via **Civic Auth**.
 
-- **Audited Smart Contracts**: All contracts undergo security audits
-- **Chainlink CCIP**: Secure cross-chain messaging
-- **Health Factor Monitoring**: Prevent over-borrowing
-- **Liquidation Protection**: Automated liquidation system
+## 📅 Roadmap
+
+- **Q1 2025:** Testnet launch with Civic Auth integration.
+- **Q2 2025:** Security audits for contracts and authentication.
+- **Q3 2025:** Mainnet deployment with full cross-chain functionality.
+- **Q4 2025:** Additional chain integrations (e.g., Solana, Binance Smart Chain).
+- **2026:** Advanced features including zk-proofs and decentralized governance.
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Please follow these steps:
 
-### Development Setup
+- Fork the repository.
+- Create a feature branch.
+- Make your changes (including updates to `App.tsx`, `Header.tsx`, or `civic.ts`).
+- Add tests for new features.
+- Submit a pull request.
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+## 📞 Support & Community
 
-## 📄 License
+- Documentation: 
+- Discord: Join our community for real-time support.
+- Twitter: 
+- Email: ujjwalsinha418@gmail.com
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## ⚖️ License
 
-## 🔮 Roadmap
+This project is licensed under the **MIT License**. See the LICENSE file for details.
 
-- [ ] **Q1 2025**: Testnet launch
-- [ ] **Q2 2025**: Security audits
-- [ ] **Q3 2025**: Mainnet deployment
-- [ ] **Q4 2025**: Additional chain integrations
-- [ ] **2026**: Advanced features (zk-proofs, governance)
-
-## 📞 Support
-
-- **Documentation**: [docs.creditlend.finance](https://docs.creditlend.finance)
-- **Discord**: [Join our community](https://discord.gg/creditlend)
-- **Twitter**: [@CreditLendFi](https://twitter.com/CreditLendFi)
-- **Email**: support@creditlend.finance
-
-## 🏆 Team
-
-Built with ❤️ by the CrossCredit team .
+*Built with ❤️ by the CrossCredit team.*
