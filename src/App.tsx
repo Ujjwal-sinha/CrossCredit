@@ -14,6 +14,7 @@ import Repay from './pages/Repay';
 import Swap from './pages/Swap';
 import CyberBackground from './components/3D/CyberBackground';
 import './App.css';
+import BlockDAGDashboard from './pages/BlockDAGDashboard'; // Import the new component
 
 // Add TypeScript type for window.civicAuthReady
 declare global {
@@ -118,6 +119,7 @@ function App() {
                   <Route path="/passport" element={<PassportNFT />} />
                   <Route path="/repay" element={<Repay />} />
                   <Route path="/swap" element={<Swap />} />
+                  <Route path="/blockdag" element={<BlockDAGDashboard />} />
                 </Route>
               </Routes>
             </AnimatePresence>

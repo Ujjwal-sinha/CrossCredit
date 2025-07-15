@@ -4,6 +4,8 @@ import { useWallet } from '../hooks/useWallet';
 import { getNetworkByChainId, getContractAddress } from './addresses';
 import { DSC_ABI, DEPOSITOR_ABI, MAIN_ROUTER_ABI, MINTER_ABI } from '../../backend/src/utils/contracts';
 import { DeFiPassportNFT_ABI } from '../abi/DeFiPassportNFT';
+import { CROSS_CREDIT_TOKEN_ABI } from '../abi/CrossCreditToken';
+import { BLOCKDAG_ROUTER_ABI } from '../abi/BlockDAGRouter';
 
 const ABI_MAP = {
   DSC: DSC_ABI,
@@ -11,11 +13,13 @@ const ABI_MAP = {
   MainRouter: MAIN_ROUTER_ABI,
   Minter: MINTER_ABI,
   DeFiPassportNFT: DeFiPassportNFT_ABI,
+  CrossCreditToken: CROSS_CREDIT_TOKEN_ABI,
+  BlockDAGRouter: BLOCKDAG_ROUTER_ABI,
 } as const;
 
 type ContractName = keyof typeof ABI_MAP;
 
-type Network = 'fuji' | 'sepolia' | 'amoy';
+type Network = 'fuji' | 'sepolia' | 'amoy' | 'blockdag';
 
 export function useContract(contractName: ContractName) {
   const { chainId } = useWallet();

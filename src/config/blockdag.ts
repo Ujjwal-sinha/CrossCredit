@@ -1,4 +1,3 @@
-
 export const BLOCKDAG_CONFIG = {
   chainId: 1043,
   name: "Primordial BlockDAG Testnet",
@@ -11,8 +10,8 @@ export const BLOCKDAG_CONFIG = {
   },
   // These will be populated after deployment
   contracts: {
-    CrossCreditToken: "0x", // Will be updated after deployment
-    BlockDAGRouter: "0x", // Will be updated after deployment
+    CrossCreditToken: "0x647E82200f9a2f4F99993BE65Aadfe76892263E3",
+    BlockDAGRouter: "0xD74ad2283dc59a30B1e89172CB9cff0B4d0BD3b8",
   },
   // Cross-chain token amounts configuration
   tokenAmounts: {

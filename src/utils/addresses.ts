@@ -23,6 +23,10 @@ export const CONTRACT_ADDRESSES = {
     Depositor: '0x328a3Abc8D777586600862E22Fd1D1bd67cC6a85',
     MainRouter: '0xc702D371C39c457cFE8230d035fB3611044Fe01d',
   },
+  blockdag: {
+    CrossCreditToken: '0x647E82200f9a2f4F99993BE65Aadfe76892263E3',
+    BlockDAGRouter: '0xD74ad2283dc59a30B1e89172CB9cff0B4d0BD3b8',
+  },
 };
 
 // Map chainId to network key
@@ -30,10 +34,12 @@ export const CHAIN_ID_TO_NETWORK = {
   '0xa869': 'fuji', // Avalanche Fuji
   '0xaa36a7': 'sepolia', // Sepolia
   '0x13882': 'amoy', // Polygon Amoy
+  '0x413': 'blockdag', // BlockDAG Testnet (1043)
 };
 
-export function getContractAddress(network: keyof typeof CONTRACT_ADDRESSES, contract: keyof typeof CONTRACT_ADDRESSES['fuji']) {
-  return CONTRACT_ADDRESSES[network]?.[contract] || '';
+export function getContractAddress(network: keyof typeof CONTRACT_ADDRESSES, contract: string) {
+  const networkContracts = CONTRACT_ADDRESSES[network];
+  return (networkContracts as any)?.[contract] || '';
 }
 
 export function getNetworkByChainId(chainId: keyof typeof CHAIN_ID_TO_NETWORK) {
