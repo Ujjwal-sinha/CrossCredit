@@ -8,7 +8,7 @@ import {
   Globe, 
   TrendingUp, 
   Award, 
-  Users,
+  Users, 
   ChevronRight,
   Star,
   ExternalLink,
