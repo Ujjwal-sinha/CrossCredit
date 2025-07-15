@@ -1,94 +1,87 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
+/** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
     compilers: [
       {
+        version: "0.8.20", // Chainlink/OpenZeppelin 5 needs this
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+          viaIR: true, // ✅ Needed to fix Stack Too Deep
+        },
+      },
+      {
         version: "0.8.19",
         settings: {
-          optimizer: { enabled: true, runs: 200 },
-          viaIR: true,
-        },
-      },
-      {
-        version: "0.8.20",
-        settings: {
-          optimizer: { enabled: true, runs: 200 },
-          viaIR: true,
-        },
-      },
-      {
-        version: "0.8.28",
-        settings: {
-          optimizer: { enabled: true, runs: 200 },
-          viaIR: true,
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+          viaIR: true, // ✅ Also enable for older contracts, just in case
         },
       },
     ],
   },
-  defaultNetwork: "hardhat",
   networks: {
     hardhat: {
       chainId: 31337,
-      allowUnlimitedContractSize: true,
     },
     sepolia: {
-      url: process.env.SEPOLIA_RPC_URL || "",
+      url: process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia.publicnode.com",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 11155111,
-      saveDeployments: true,
-      gas: "auto",
-      gasPrice: "auto",
-    },
-    arbitrum: {
-      url: process.env.ARBITRUM_RPC_URL || "",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 421614,
-      saveDeployments: true,
-      gas: "auto",
-      gasPrice: "auto",
-    },
-    amoy: {
-      url: process.env.AMOY_RPC_URL || "",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 80002,
-      saveDeployments: true,
-      gas: "auto",
-      gasPrice: "auto",
-    },
-    optimism: {
-      url: process.env.OPTIMISM_RPC_URL || "",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 11155420,
-      saveDeployments: true,
-      gas: "auto",
-      gasPrice: "auto",
     },
     fuji: {
-      url: process.env.FUJI_RPC_URL || "",
+      url: process.env.FUJI_RPC_URL || "https://api.avax-test.network/ext/bc/C/rpc",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 43113,
-      saveDeployments: true,
-      gas: "auto",
-      gasPrice: "auto",
     },
-    base: {
-      url: process.env.BASE_RPC_URL || "",
+    mumbai: {
+      url: process.env.MUMBAI_RPC_URL || "https://rpc-mumbai.maticvigil.com",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 84532,
-      saveDeployments: true,
-      gas: "auto",
-      gasPrice: "auto",
+      chainId: 80001,
+    },
+    arbitrumGoerli: {
+      url: process.env.ARBITRUM_GOERLI_RPC_URL || "https://goerli-rollup.arbitrum.io/rpc",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 421613,
+    },
+    optimismGoerli: {
+      url: process.env.OPTIMISM_GOERLI_RPC_URL || "https://goerli.optimism.io",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 420,
+    },
+    blockdag: {
+      url: process.env.BLOCKDAG_RPC_URL || "https://rpc.primordial.bdagscan.com",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 1043,
+      gasPrice: 20000000000, // 20 gwei
+      gas: 8000000,
     },
   },
-  paths: {
-    sources: "./contracts",
-    tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts",
-  },
-  mocha: {
-    timeout: 40000,
+  etherscan: {
+    apiKey: {
+      sepolia: process.env.ETHERSCAN_API_KEY || "",
+      avalancheFujiTestnet: process.env.SNOWTRACE_API_KEY || "",
+      polygonMumbai: process.env.POLYGONSCAN_API_KEY || "",
+      arbitrumGoerli: process.env.ARBISCAN_API_KEY || "",
+      optimisticGoerli: process.env.OPTIMISTIC_ETHERSCAN_API_KEY || "",
+      blockdag: "no-api-key-needed",
+    },
+    customChains: [
+      {
+        network: "blockdag",
+        chainId: 1043,
+        urls: {
+          apiURL: "https://primordial.bdagscan.com/api",
+          browserURL: "https://primordial.bdagscan.com/",
+        },
+      },
+    ],
   },
 };

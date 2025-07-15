@@ -1,0 +1,30 @@
+{
+  "network": "BlockDAG Testnet",
+  "chainId": 1043,
+  "timestamp": "2025-07-15T21:25:59.808Z",
+  "deployer": "0x1c07B640EF2d340C0a1f95595ce898E56a9593bF",
+  "contracts": {
+    "CrossCreditToken": {
+      "address": "0x647E82200f9a2f4F99993BE65Aadfe76892263E3",
+      "name": "CrossCredit Token",
+      "symbol": "XCC",
+      "decimals": 18,
+      "totalSupply": "1000000000.0",
+      "sendFee": 100,
+      "receiveFee": 50
+    },
+    "BlockDAGRouter": {
+      "address": "0xD74ad2283dc59a30B1e89172CB9cff0B4d0BD3b8",
+      "chainId": 1043,
+      "minTransfer": "1.0",
+      "maxTransfer": "1000000.0"
+    }
+  },
+  "networkConfig": {
+    "name": "Primordial BlockDAG Testnet",
+    "chainId": 1043,
+    "rpcUrl": "https://rpc.primordial.bdagscan.com",
+    "explorerUrl": "https://primordial.bdagscan.com/",
+    "currencySymbol": "BDAG"
+  }
+}

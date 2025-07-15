@@ -52,3 +52,54 @@ export const getExplorerUrl = (chainId: string, address: string) => {
   const chainInfo = getChainInfo(chainId);
   return chainInfo.explorer ? `${chainInfo.explorer}/address/${address}` : '#';
 };
+
+export const SUPPORTED_CHAINS = [
+  {
+    id: 11155111,
+    name: 'Sepolia',
+    symbol: 'ETH',
+    rpc: 'https://ethereum-sepolia.publicnode.com',
+    explorer: 'https://sepolia.etherscan.io',
+    testnet: true
+  },
+  {
+    id: 43113,
+    name: 'Avalanche Fuji',
+    symbol: 'AVAX', 
+    rpc: 'https://api.avax-test.network/ext/bc/C/rpc',
+    explorer: 'https://testnet.snowtrace.io',
+    testnet: true
+  },
+  {
+    id: 80001,
+    name: 'Polygon Mumbai',
+    symbol: 'MATIC',
+    rpc: 'https://rpc-mumbai.maticvigil.com',
+    explorer: 'https://mumbai.polygonscan.com',
+    testnet: true
+  },
+  {
+    id: 421613,
+    name: 'Arbitrum Goerli',
+    symbol: 'ETH',
+    rpc: 'https://goerli-rollup.arbitrum.io/rpc',
+    explorer: 'https://goerli.arbiscan.io',
+    testnet: true
+  },
+  {
+    id: 420,
+    name: 'Optimism Goerli',
+    symbol: 'ETH',
+    rpc: 'https://goerli.optimism.io',
+    explorer: 'https://goerli-optimism.etherscan.io',
+    testnet: true
+  },
+  {
+    id: 1043,
+    name: 'BlockDAG Testnet',
+    symbol: 'BDAG',
+    rpc: 'https://rpc.primordial.bdagscan.com',
+    explorer: 'https://primordial.bdagscan.com',
+    testnet: true
+  }
+];
