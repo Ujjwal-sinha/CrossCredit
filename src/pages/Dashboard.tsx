@@ -10,6 +10,7 @@ import ConnectWallet from '../components/Web3/ConnectWallet';
 import GradientButton from '../components/UI/GradientButton';
 import { useWallet } from '../hooks/useWallet';
 import { CROSS_CREDIT_TOKEN_ABI } from '../abi/CrossCreditToken';
+
 import { BLOCKDAG_ROUTER_ABI } from '../abi/BlockDAGRouter';
 
 
@@ -31,9 +32,9 @@ const Dashboard: React.FC = () => {
 
   const isBlockDAGNetwork = chainId === '0x413'; // BlockDAG testnet chain ID
 
-  // CrossCredit Token contract address
-  const CROSS_CREDIT_TOKEN_ADDRESS = '0x647E82200f9a2f4F99993BE65Aadfe76892263E3';
-  const BLOCKDAG_ROUTER_ADDRESS = '0xD74ad2283dc59a30B1e89172CB9cff0B4d0BD3b8';
+  // Get contract addresses from environment variables
+  const CROSS_CREDIT_TOKEN_ADDRESS = import.meta.env.VITE_CROSS_CREDIT_TOKEN_ADDRESS;
+  const BLOCKDAG_ROUTER_ADDRESS = import.meta.env.VITE_BLOCKDAG_ROUTER_ADDRESS;
 
   const supportedChains = [
     { id: '1', name: 'Ethereum Mainnet' },
